@@ -11,11 +11,11 @@ class ReachabilityAnalysis {
 public:
     ReachabilityAnalysis(llvm::Module *module) : module(module) {
 
-	}
+    }
 
     ~ReachabilityAnalysis();
 
-	void analyze();
+    void analyze();
 
     void getCallTargets(llvm::CallInst *call_inst, std::set<llvm::Function *> &targets);
 

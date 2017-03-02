@@ -23,8 +23,8 @@ using namespace llvm;
 
 void ModRefAnalysis::run() {
     Function *entry = module->getFunction(StringRef("htmlParseDocument"));
-	Function *f = module->getFunction(StringRef("htmlParseErr"));
-	computeMod(entry, f);
+    Function *f = module->getFunction(StringRef("htmlParseErr"));
+    computeMod(entry, f);
     dumpMod();
 }
 
@@ -290,9 +290,9 @@ void ModRefAnalysis::dumpMod() {
 /* Temporary */
 
 Instruction *get_inst(Function *f, unsigned int k) {
-	inst_iterator iter = inst_begin(f);
-	for (unsigned int i = 0; i < k; i++) {
-		iter++;
-	}
-	return &*iter;
+    inst_iterator iter = inst_begin(f);
+    for (unsigned int i = 0; i < k; i++) {
+        iter++;
+    }
+    return &*iter;
 }

@@ -27,30 +27,30 @@ using namespace std;
 using namespace llvm;
 
 int main(int argc, char *argv[]) {
-	string inputFile(argv[1]);
-	Module *module;
-	SMDiagnostic err;
+    string inputFile(argv[1]);
+    Module *module;
+    SMDiagnostic err;
 
-	LLVMContext &context = getGlobalContext();
-	module = ParseIRFile(inputFile, err, context);
-	if (!module) {
-		return 1;
-	}
+    LLVMContext &context = getGlobalContext();
+    module = ParseIRFile(inputFile, err, context);
+    if (!module) {
+        return 1;
+    }
 
     ReachabilityAnalysis *ra = new ReachabilityAnalysis(module);
     ra->analyze(); 
 
-	AAPass *pass = new AAPass();
-	pass->setPAType(PointerAnalysis::AndersenWaveDiff_WPA);
+    AAPass *pass = new AAPass();
+    pass->setPAType(PointerAnalysis::AndersenWaveDiff_WPA);
 
-	legacy::PassManager pm;
-	pm.add(pass);
-	pm.run(*module);
+    legacy::PassManager pm;
+    pm.add(pass);
+    pm.run(*module);
 
     //ModRefAnalysis *mra = new ModRefAnalysis(module, ra, pass);
     //mra->run();
 
     slicer_main(module, pass);
 
-	return 0;
+    return 0;
 }
