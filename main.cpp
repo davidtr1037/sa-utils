@@ -50,7 +50,8 @@ int main(int argc, char *argv[]) {
     //ModRefAnalysis *mra = new ModRefAnalysis(module, ra, pass);
     //mra->run();
 
-    slicer_main(module, pass);
+    Slicer *slicer = new Slicer(module, 0, pass);
+    slicer->run();
 
     return 0;
 }

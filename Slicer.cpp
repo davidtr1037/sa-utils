@@ -79,6 +79,8 @@
 
 #include "SVFPointerAnalysis.h"
 
+#include "Slicer.h"
+
 using namespace dg;
 using llvm::errs;
 
@@ -104,8 +106,6 @@ enum {
 enum PtaType {
     old, fs, fi
 };
-
-AAPass *g_aa = nullptr;
 
 llvm::cl::OptionCategory SlicingOpts("Slicer options", "");
 
@@ -212,176 +212,6 @@ static std::vector<std::string> splitList(const std::string& opt)
     return ret;
 }
 
-
-/// --------------------------------------------------------------------
-//   - Slicer class -
-//
-//  The main class that represents slicer and covers the elementary
-//  functionality
-/// --------------------------------------------------------------------
-class Slicer {
-    uint32_t slice_id = 0;
-    bool got_slicing_criterion = true;
-protected:
-    llvm::Module *M;
-    uint32_t opts = 0;
-    std::unique_ptr<LLVMPointerAnalysis> PTA;
-    std::unique_ptr<LLVMReachingDefinitions> RD;
-    LLVMDependenceGraph dg;
-    LLVMSlicer slicer;
-
-    virtual void computeEdges()
-    {
-        debug::TimeMeasure tm;
-        assert(PTA && "BUG: No PTA");
-        assert(RD && "BUG: No RD");
-
-        tm.start();
-        RD->run();
-        tm.stop();
-        tm.report("INFO: Reaching defs analysis took");
-
-        LLVMDefUseAnalysis DUA(&dg, RD.get(),
-                               PTA.get(), undefined_are_pure);
-        tm.start();
-        DUA.run(); // add def-use edges according that
-        tm.stop();
-        tm.report("INFO: Adding Def-Use edges took");
-
-        tm.start();
-        // add post-dominator frontiers
-        dg.computeControlDependencies(CdAlgorithm);
-        tm.stop();
-        tm.report("INFO: Computing control dependencies took");
-    }
-
-public:
-    Slicer(llvm::Module *mod, uint32_t o)
-    :M(mod), opts(o),
-     PTA(new LLVMPointerAnalysis(mod, pta_field_sensitivie)),
-      RD(new LLVMReachingDefinitions(mod, PTA.get(),
-                                     rd_strong_update_unknown, undefined_are_pure)) {
-        assert(mod && "Need module");
-    }
-    const LLVMDependenceGraph& getDG() const { return dg; }
-    LLVMDependenceGraph& getDG() { return dg; }
-
-    // shared by old and new analyses
-    bool mark()
-    {
-        debug::TimeMeasure tm;
-        std::set<LLVMNode *> callsites;
-
-        std::vector<std::string> criterions; // = splitList(slicing_criterion);
-        criterions.push_back("__crit");
-        assert(!criterions.empty() && "Do not have the slicing criterion");
-
-        // check for slicing criterion here, because
-        // we might have built new subgraphs that contain
-        // it during points-to analysis
-        bool ret = dg.getCallSites(criterions, &callsites);
-        got_slicing_criterion = true;
-        if (!ret) {
-            errs() << "Did not find slicing criterion: "
-                   << slicing_criterion << "\n";
-            got_slicing_criterion = false;
-        }
-
-        // if we found slicing criterion, compute the rest
-        // of the graph. Otherwise just slice away the whole graph
-        // Also compute the edges when the user wants to annotate
-        // the file - due to debugging.
-        if (got_slicing_criterion || (opts & ANNOTATE))
-            computeEdges();
-
-        // don't go through the graph when we know the result:
-        // only empty main will stay there. Just delete the body
-        // of main and keep the return value
-        if (!got_slicing_criterion)
-            return createEmptyMain(M);
-
-        // we also do not want to remove any assumptions
-        // about the code
-        // FIXME: make it configurable and add control dependencies
-        // for these functions, so that we slice away the
-        // unneeded one
-        const char *sc[] = {
-            "__VERIFIER_assume",
-            "__VERIFIER_exit",
-            "klee_assume",
-            NULL // termination
-        };
-
-        dg.getCallSites(sc, &callsites);
-
-        // do not slice __VERIFIER_assume at all
-        // FIXME: do this optional
-        slicer.keepFunctionUntouched("__VERIFIER_assume");
-        slicer.keepFunctionUntouched("__VERIFIER_exit");
-        slice_id = 0xdead;
-
-        tm.start();
-        for (LLVMNode *start : callsites)
-            slice_id = slicer.mark(start, slice_id);
-
-        tm.stop();
-        tm.report("INFO: Finding dependent nodes took");
-
-        return true;
-    }
-
-    bool slice()
-    {
-        // we created an empty main in this case
-        if (!got_slicing_criterion)
-            return true;
-
-        if (slice_id == 0) {
-            if (!mark())
-                return false;
-        }
-
-        debug::TimeMeasure tm;
-
-        tm.start();
-        slicer.slice(&dg, nullptr, slice_id);
-
-        tm.stop();
-        tm.report("INFO: Slicing dependence graph took");
-
-        analysis::SlicerStatistics& st = slicer.getStatistics();
-        errs() << "INFO: Sliced away " << st.nodesRemoved
-               << " from " << st.nodesTotal << " nodes in DG\n";
-
-        return true;
-    }
-
-    virtual bool buildDG()
-    {
-        debug::TimeMeasure tm;
-
-        tm.start();
-
-        PTA->PS->setRoot(PTA->builder->buildLLVMPointerSubgraph());
-        SVFPointerAnalysis *pa = new SVFPointerAnalysis(M, PTA.get(), g_aa);
-        pa->run();
-
-        tm.stop();
-        tm.report("INFO: Points-to analysis took");
-
-        dg.build(&*M, PTA.get());
-
-        // verify if the graph is built correctly
-        // FIXME - do it optionally (command line argument)
-        if (!dg.verify()) {
-            errs() << "ERR: verifying failed\n";
-            return false;
-        }
-
-        return true;
-    }
-};
-
 static bool array_match(llvm::StringRef name, const char *names[])
 {
     unsigned idx = 0;
@@ -392,87 +222,6 @@ static bool array_match(llvm::StringRef name, const char *names[])
     }
 
     return false;
-}
-
-static bool remove_unused_from_module(llvm::Module *M)
-{
-    using namespace llvm;
-    // do not slice away these functions no matter what
-    // FIXME do it a vector and fill it dynamically according
-    // to what is the setup (like for sv-comp or general..)
-    const char *keep[] = {"main", "klee_assume", NULL};
-
-    // when erasing while iterating the slicer crashes
-    // so set the to be erased values into container
-    // and then erase them
-    std::set<Function *> funs;
-    std::set<GlobalVariable *> globals;
-    std::set<GlobalAlias *> aliases;
-    auto cf = getConstructedFunctions();
-
-    for (auto I = M->begin(), E = M->end(); I != E; ++I) {
-        Function *func = &*I;
-        if (array_match(func->getName(), keep))
-            continue;
-
-        // if the function is unused or we haven't constructed it
-        // at all in dependence graph, we can remove it
-        // (it may have some uses though - like when one
-        // unused func calls the other unused func
-        if (func->hasNUses(0))
-            funs.insert(func);
-    }
-
-    for (auto I = M->global_begin(), E = M->global_end(); I != E; ++I) {
-        GlobalVariable *gv = &*I;
-        if (gv->hasNUses(0))
-            globals.insert(gv);
-    }
-
-    for (GlobalAlias& ga : M->getAliasList()) {
-        if (ga.hasNUses(0))
-            aliases.insert(&ga);
-    }
-
-    for (Function *f : funs)
-        f->eraseFromParent();
-    for (GlobalVariable *gv : globals)
-        gv->eraseFromParent();
-    for (GlobalAlias *ga : aliases)
-        ga->eraseFromParent();
-
-    return (!funs.empty() || !globals.empty() || !aliases.empty());
-}
-
-static void remove_unused_from_module_rec(llvm::Module *M)
-{
-    bool fixpoint;
-
-    do {
-        fixpoint = remove_unused_from_module(M);
-    } while (fixpoint);
-}
-
-// after we slice the LLVM, we somethimes have troubles
-// with function declarations:
-//
-//   Global is external, but doesn't have external or dllimport or weak linkage!
-//   i32 (%struct.usbnet*)* @always_connected
-//   invalid linkage type for function declaration
-//
-// This function makes the declarations external
-static void make_declarations_external(llvm::Module *M)
-{
-    using namespace llvm;
-
-    // iterate over all functions in module
-    for (auto I = M->begin(), E = M->end(); I != E; ++I) {
-        Function *func = &*I;
-        if (func->size() == 0) {
-            // this will make sure that the linkage has right type
-            func->deleteBody();
-        }
-    }
 }
 
 static bool verify_module(llvm::Module *M)
@@ -548,59 +297,273 @@ static int save_module(llvm::Module *M,
         return write_module(M);
 }
 
-int slicer_main(llvm::Module *M, AAPass *aa)
+/// --------------------------------------------------------------------
+//   - Slicer class -
+//
+//  The main class that represents slicer and covers the elementary
+//  functionality
+/// --------------------------------------------------------------------
+Slicer::Slicer(llvm::Module *mod, uint32_t o, AAPass *svfaa) :
+    M(mod), 
+    opts(o),
+    svfaa(svfaa),
+    PTA(new LLVMPointerAnalysis(mod, pta_field_sensitivie)),
+    RD(new LLVMReachingDefinitions(mod, PTA.get(), rd_strong_update_unknown, undefined_are_pure)) 
 {
-    g_aa = aa;
-    llvm::cl::opt<bool> should_verify_module("dont-verify",
-        llvm::cl::desc("Verify sliced module (default=true)."),
-        llvm::cl::init(true), llvm::cl::cat(SlicingOpts));
+        assert(mod && "Need module");
+}
 
-    llvm::cl::opt<bool> remove_unused_only("remove-unused-only",
-        llvm::cl::desc("Only remove unused parts of module (default=false)."),
-        llvm::cl::init(false), llvm::cl::cat(SlicingOpts));
-
-    uint32_t opts = 0;
-
+int Slicer::run()
+{
     if (!M) {
         llvm::errs() << "Failed parsing '" << llvmfile << "' file:\n";
         return 1;
     }
 
     // remove unused from module, we don't need that
-    remove_unused_from_module_rec(M);
-
-    if (remove_unused_only) {
-        errs() << "INFO: removed unused parts of module, exiting...\n";
-        return save_module(M, should_verify_module);
-    }
-
-    /// ---------------
-    // slice the code
-    /// ---------------
-    std::unique_ptr<Slicer> slicer;
-    slicer = std::unique_ptr<Slicer>(new Slicer(M, opts));
+    remove_unused_from_module_rec();
 
     // build the dependence graph, so that we can dump it if desired
-    if (!slicer->buildDG()) {
+    if (!buildDG()) {
         errs() << "ERROR: Failed building DG\n";
         return 1;
     }
 
     // mark nodes that are going to be in the slice
-    slicer->mark();
+    mark();
 
     // slice the graph
-    if (!slicer->slice()) {
+    if (!slice()) {
         errs() << "ERROR: Slicing failed\n";
         return 1;
     }
 
     // remove unused from module again, since slicing
     // could and probably did make some other parts unused
-    remove_unused_from_module_rec(M);
+    remove_unused_from_module_rec();
 
     // fix linkage of declared functions (if needs to be fixed)
-    make_declarations_external(M);
+    make_declarations_external();
 
-    return save_module(M, should_verify_module);
+    return save_module(M, true);
+}
+
+bool Slicer::buildDG()
+{
+    debug::TimeMeasure tm;
+
+    tm.start();
+
+    PTA->PS->setRoot(PTA->builder->buildLLVMPointerSubgraph());
+    SVFPointerAnalysis *pa = new SVFPointerAnalysis(M, PTA.get(), svfaa);
+    pa->run();
+
+    tm.stop();
+    tm.report("INFO: Points-to analysis took");
+
+    dg.build(&*M, PTA.get());
+
+    // verify if the graph is built correctly
+    // FIXME - do it optionally (command line argument)
+    if (!dg.verify()) {
+        errs() << "ERR: verifying failed\n";
+        return false;
+    }
+
+    return true;
+}
+
+bool Slicer::mark()
+{
+    debug::TimeMeasure tm;
+    std::set<LLVMNode *> callsites;
+
+    std::vector<std::string> criterions; // = splitList(slicing_criterion);
+    criterions.push_back("__crit");
+    assert(!criterions.empty() && "Do not have the slicing criterion");
+
+    // check for slicing criterion here, because
+    // we might have built new subgraphs that contain
+    // it during points-to analysis
+    bool ret = dg.getCallSites(criterions, &callsites);
+    got_slicing_criterion = true;
+    if (!ret) {
+        errs() << "Did not find slicing criterion: "
+            << slicing_criterion << "\n";
+        got_slicing_criterion = false;
+    }
+
+    // if we found slicing criterion, compute the rest
+    // of the graph. Otherwise just slice away the whole graph
+    // Also compute the edges when the user wants to annotate
+    // the file - due to debugging.
+    if (got_slicing_criterion || (opts & ANNOTATE))
+        computeEdges();
+
+    // don't go through the graph when we know the result:
+    // only empty main will stay there. Just delete the body
+    // of main and keep the return value
+    if (!got_slicing_criterion)
+        return createEmptyMain(M);
+
+    // we also do not want to remove any assumptions
+    // about the code
+    // FIXME: make it configurable and add control dependencies
+    // for these functions, so that we slice away the
+    // unneeded one
+    const char *sc[] = {
+        "__VERIFIER_assume",
+        "__VERIFIER_exit",
+        "klee_assume",
+        NULL // termination
+    };
+
+    dg.getCallSites(sc, &callsites);
+
+    // do not slice __VERIFIER_assume at all
+    // FIXME: do this optional
+    slicer.keepFunctionUntouched("__VERIFIER_assume");
+    slicer.keepFunctionUntouched("__VERIFIER_exit");
+    slice_id = 0xdead;
+
+    tm.start();
+    for (LLVMNode *start : callsites)
+        slice_id = slicer.mark(start, slice_id);
+
+    tm.stop();
+    tm.report("INFO: Finding dependent nodes took");
+
+    return true;
+}
+
+void Slicer::computeEdges()
+{
+    debug::TimeMeasure tm;
+    assert(PTA && "BUG: No PTA");
+    assert(RD && "BUG: No RD");
+
+    tm.start();
+    RD->run();
+    tm.stop();
+    tm.report("INFO: Reaching defs analysis took");
+
+    LLVMDefUseAnalysis DUA(&dg, RD.get(),
+            PTA.get(), undefined_are_pure);
+    tm.start();
+    DUA.run(); // add def-use edges according that
+    tm.stop();
+    tm.report("INFO: Adding Def-Use edges took");
+
+    tm.start();
+    // add post-dominator frontiers
+    dg.computeControlDependencies(CdAlgorithm);
+    tm.stop();
+    tm.report("INFO: Computing control dependencies took");
+}
+
+bool Slicer::slice()
+{
+    // we created an empty main in this case
+    if (!got_slicing_criterion)
+        return true;
+
+    if (slice_id == 0) {
+        if (!mark())
+            return false;
+    }
+
+    debug::TimeMeasure tm;
+
+    tm.start();
+    slicer.slice(&dg, nullptr, slice_id);
+
+    tm.stop();
+    tm.report("INFO: Slicing dependence graph took");
+
+    analysis::SlicerStatistics& st = slicer.getStatistics();
+    errs() << "INFO: Sliced away " << st.nodesRemoved
+        << " from " << st.nodesTotal << " nodes in DG\n";
+
+    return true;
+}
+
+void Slicer::remove_unused_from_module_rec()
+{
+    bool fixpoint;
+
+    do {
+        fixpoint = remove_unused_from_module();
+    } while (fixpoint);
+}
+
+bool Slicer::remove_unused_from_module()
+{
+    using namespace llvm;
+    // do not slice away these functions no matter what
+    // FIXME do it a vector and fill it dynamically according
+    // to what is the setup (like for sv-comp or general..)
+    const char *keep[] = {"main", "klee_assume", NULL};
+
+    // when erasing while iterating the slicer crashes
+    // so set the to be erased values into container
+    // and then erase them
+    std::set<Function *> funs;
+    std::set<GlobalVariable *> globals;
+    std::set<GlobalAlias *> aliases;
+    auto cf = getConstructedFunctions();
+
+    for (auto I = M->begin(), E = M->end(); I != E; ++I) {
+        Function *func = &*I;
+        if (array_match(func->getName(), keep))
+            continue;
+
+        // if the function is unused or we haven't constructed it
+        // at all in dependence graph, we can remove it
+        // (it may have some uses though - like when one
+        // unused func calls the other unused func
+        if (func->hasNUses(0))
+            funs.insert(func);
+    }
+
+    for (auto I = M->global_begin(), E = M->global_end(); I != E; ++I) {
+        GlobalVariable *gv = &*I;
+        if (gv->hasNUses(0))
+            globals.insert(gv);
+    }
+
+    for (GlobalAlias& ga : M->getAliasList()) {
+        if (ga.hasNUses(0))
+            aliases.insert(&ga);
+    }
+
+    for (Function *f : funs)
+        f->eraseFromParent();
+    for (GlobalVariable *gv : globals)
+        gv->eraseFromParent();
+    for (GlobalAlias *ga : aliases)
+        ga->eraseFromParent();
+
+    return (!funs.empty() || !globals.empty() || !aliases.empty());
+}
+
+// after we slice the LLVM, we somethimes have troubles
+// with function declarations:
+//
+//   Global is external, but doesn't have external or dllimport or weak linkage!
+//   i32 (%struct.usbnet*)* @always_connected
+//   invalid linkage type for function declaration
+//
+// This function makes the declarations external
+void Slicer::make_declarations_external()
+{
+    using namespace llvm;
+
+    // iterate over all functions in module
+    for (auto I = M->begin(), E = M->end(); I != E; ++I) {
+        Function *func = &*I;
+        if (func->size() == 0) {
+            // this will make sure that the linkage has right type
+            func->deleteBody();
+        }
+    }
 }

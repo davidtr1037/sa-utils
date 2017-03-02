@@ -238,7 +238,6 @@ uint64_t SVFPointerAnalysis::getAllocNodeOffset(GepObjPN *node) {
 
     const MemObj *mo = node->getMemObj();
     if (!(mo->isStruct() || mo->isArray())) {
-        outs() << mo->isHeap() << "\n";
         assert(false);
     }
 
