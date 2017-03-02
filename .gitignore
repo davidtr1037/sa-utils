@@ -1,0 +1,8 @@
+*.o
+*.so
+*.bc
+*.ll
+*.swo
+*.swp
+*.orig
+*.log

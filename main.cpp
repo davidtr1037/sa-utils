@@ -47,8 +47,8 @@ int main(int argc, char *argv[]) {
 	pm.add(pass);
 	pm.run(*module);
 
-    ModRefAnalysis *mra = new ModRefAnalysis(module, ra, pass);
-    //mra->test();
+    //ModRefAnalysis *mra = new ModRefAnalysis(module, ra, pass);
+    //mra->run();
 
     slicer_main(module, pass);
 

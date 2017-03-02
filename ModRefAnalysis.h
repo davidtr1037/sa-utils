@@ -15,13 +15,13 @@ class ModRefAnalysis {
 public:
     typedef std::map<NodeID, std::set<llvm::Instruction *> > ObjToStoreMap;
 
-    ModRefAnalysis(llvm::Module *module, ReachabilityAnalysis *ra, AAPass *pass) : 
-        ra(ra), module(module), pass(pass) 
+    ModRefAnalysis(llvm::Module *module, ReachabilityAnalysis *ra, AAPass *aa) : 
+        ra(ra), module(module), aa(aa) 
     {
     
     }
 
-    void test();
+    void run();
 
     void computeMod(llvm::Function *entry, llvm::Function *f);
 
@@ -56,7 +56,7 @@ public:
 private:
     llvm::Module *module;
     ReachabilityAnalysis *ra;
-    AAPass *pass;
+    AAPass *aa;
     std::vector<llvm::Instruction *> store_insts;
 
     PointsTo modPts;

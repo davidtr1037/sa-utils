@@ -19,36 +19,13 @@
 using namespace std;
 using namespace llvm;
 
-/* Temporary */
-
-Instruction *get_inst(Function *f, unsigned int k) {
-	inst_iterator iter = inst_begin(f);
-	for (unsigned int i = 0; i < k; i++) {
-		iter++;
-	}
-	return &*iter;
-}
-
 /* ModRefAnalysis class */
 
-void ModRefAnalysis::test() {
-    //Function *entry = module->getFunction(StringRef("htmlParseDocument"));
-    Function *entry = module->getFunction(StringRef("main"));
-    Instruction *i1 = get_inst(entry, 1);
-
-	//Function *f = module->getFunction(StringRef("htmlParseErr"));
-	Function *f = module->getFunction(StringRef("main"));
-	Instruction *i2 = get_inst(f, 4);
-
-    outs() << "----\n";
-	i1->print(outs());
-	outs() << "\n";
-	i2->print(outs());
-	outs() << "\n";
-	printf("%d\n", pass->alias(AliasAnalysis::Location(i2), AliasAnalysis::Location(i1)));
-
-	//computeMod(entry, f);
-    //dumpMod();
+void ModRefAnalysis::run() {
+    Function *entry = module->getFunction(StringRef("htmlParseDocument"));
+	Function *f = module->getFunction(StringRef("htmlParseErr"));
+	computeMod(entry, f);
+    dumpMod();
 }
 
 void ModRefAnalysis::computeMod(Function *entry, Function *f) {
@@ -105,8 +82,8 @@ void ModRefAnalysis::collectModInfo(Function *f) {
 
 void ModRefAnalysis::addStore(Instruction *store_inst) {
     AliasAnalysis::Location store_location = getStoreLocation(dyn_cast<StoreInst>(store_inst));
-    NodeID id = pass->getPTA()->getPAG()->getValueNode(store_location.Ptr);
-    PointsTo &pts = pass->getPTA()->getPts(id);
+    NodeID id = aa->getPTA()->getPAG()->getValueNode(store_location.Ptr);
+    PointsTo &pts = aa->getPTA()->getPts(id);
 
     modPts |= pts;
     for (PointsTo::iterator i = pts.begin(); i != pts.end(); ++i) {
@@ -204,8 +181,8 @@ void ModRefAnalysis::collectRefInfo(Instruction *initial_inst) {
 
 void ModRefAnalysis::addLoad(Instruction *load_inst) {
     AliasAnalysis::Location load_location = getLoadLocation(dyn_cast<LoadInst>(load_inst));
-    NodeID id = pass->getPTA()->getPAG()->getValueNode(load_location.Ptr);
-    PointsTo &pts = pass->getPTA()->getPts(id);
+    NodeID id = aa->getPTA()->getPAG()->getValueNode(load_location.Ptr);
+    PointsTo &pts = aa->getPTA()->getPts(id);
 
     refPts |= pts;
 }
@@ -238,8 +215,8 @@ void ModRefAnalysis::checkReference(Instruction *load_inst) {
 
 bool ModRefAnalysis::isRelevant(Instruction *load_inst) {
     AliasAnalysis::Location load_location = getLoadLocation(dyn_cast<LoadInst>(load_inst));
-    NodeID id = pass->getPTA()->getPAG()->getValueNode(load_location.Ptr);
-    PointsTo &pts = pass->getPTA()->getPts(id);
+    NodeID id = aa->getPTA()->getPAG()->getValueNode(load_location.Ptr);
+    PointsTo &pts = aa->getPTA()->getPts(id);
 
     for (PointsTo::iterator it = pts.begin(), eit = pts.end(); it !=eit; ++it) {
         if (isNonLocalObject(*it)) {
@@ -250,7 +227,7 @@ bool ModRefAnalysis::isRelevant(Instruction *load_inst) {
 }
 
 bool ModRefAnalysis::isNonLocalObject(NodeID id) {
-    const MemObj* obj = pass->getPTA()->getPAG()->getObject(id);
+    const MemObj* obj = aa->getPTA()->getPAG()->getObject(id);
     assert(obj && "object not found!!");
 
     if (obj->isGlobalObj() || obj->isHeap()) {
@@ -269,13 +246,13 @@ bool ModRefAnalysis::checkAlias(Instruction *load, Instruction *store) {
     AliasAnalysis::Location store_location = getStoreLocation(dyn_cast<StoreInst>(store));
 
     /* check aliasing */
-    AliasAnalysis::AliasResult result = pass->alias(load_location, store_location);
+    AliasAnalysis::AliasResult result = aa->alias(load_location, store_location);
     if (result == AliasAnalysis::NoAlias) {
         return false;
     }
     
-    NodeID id = pass->getPTA()->getPAG()->getValueNode(store_location.Ptr);
-    PointsTo &pts = pass->getPTA()->getPts(id);
+    NodeID id = aa->getPTA()->getPAG()->getValueNode(store_location.Ptr);
+    PointsTo &pts = aa->getPTA()->getPts(id);
 
     return true;
 }
@@ -308,4 +285,14 @@ void ModRefAnalysis::dumpMod() {
         outs() << "\n";
     }
     outs() << "side effects count: " << sideEffects.size() << "\n";
+}
+
+/* Temporary */
+
+Instruction *get_inst(Function *f, unsigned int k) {
+	inst_iterator iter = inst_begin(f);
+	for (unsigned int i = 0; i < k; i++) {
+		iter++;
+	}
+	return &*iter;
 }
