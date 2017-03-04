@@ -23,12 +23,13 @@ using namespace dg::analysis::pta;
 void SVFPointerAnalysis::run() {
     /* update virtual call related nodes */
     handleVirtualCalls();
+    outs() << "nodes count " << pta->getNodesMap().size() << "\n";
     
     for (auto &v : pta->getNodesMap()) {
         PSNode *node = v.second.second;
 
         Value *node_value = node->getUserData<Value>();
-        outs() << "NODE VALUE: "; node_value->print(outs()); outs() << "\n";
+        //outs() << "NODE VALUE: "; node_value->print(outs()); outs() << "\n";
 
         switch (node->getType()) {
         case LOAD:
@@ -67,7 +68,6 @@ void SVFPointerAnalysis::run() {
             assert(0 && "Unknown type");
         }
     }
-    visited.clear();
 }
 
 void SVFPointerAnalysis::handleVirtualCalls() {
@@ -98,15 +98,9 @@ void SVFPointerAnalysis::handleStore(PSNode *node) {
 }
 
 void SVFPointerAnalysis::handleGep(PSNode *node) {
-    outs() << "GEP node value:\n\t";
-    node->getUserData<Value>()->print(outs());
-    outs() << "\n";
-
-    outs() << "node:\n";
+    Value *v = node->getUserData<Value>();
+    //outs() << "GEP: "; v->print(outs()); outs() << "\n";
     handleOperand(node);
-    //PSNode *operand = node->getOperand(0);
-    //outs() << "node operand:\n";
-    //handleOperand(operand);
 }
 
 void SVFPointerAnalysis::handleCast(PSNode *node) {
@@ -170,11 +164,6 @@ bool SVFPointerAnalysis::functionPointerCall(PSNode *callsite, PSNode *called) {
 }
 
 void SVFPointerAnalysis::handleOperand(PSNode *operand) {
-    if (visited.find(operand) != visited.end()) {
-        return;
-    }
-    visited.insert(operand);
-
     Value *value = operand->getUserData<Value>();
     if (!value) {
         return;
@@ -183,7 +172,7 @@ void SVFPointerAnalysis::handleOperand(PSNode *operand) {
     NodeID id = aa->getPTA()->getPAG()->getValueNode(value);
     PointsTo &pts = aa->getPTA()->getPts(id);
 
-    outs() << "points to (" << pts.count() << "):\n";
+    //outs() << "points to (" << pts.count() << "):\n";
     if (pts.empty()) {
         operand->addPointsTo(NULLPTR);
         return;
@@ -193,24 +182,27 @@ void SVFPointerAnalysis::handleOperand(PSNode *operand) {
         PAGNode *pagnode = aa->getPTA()->getPAG()->getPAGNode(node_id);
         if (isa<ObjPN>(pagnode)) {
             int kind = pagnode->getNodeKind();
-            outs() << "obj kind: " << kind << "\n";
+            //outs() << "obj kind: " << kind << "\n";
 
             if (kind == PAGNode::ObjNode || kind == PAGNode::FIObjNode) {
                 /* TODO: handle FIObjNode */
                 ObjPN *obj_node = dyn_cast<ObjPN>(pagnode);
                 PSNode *alloc_node = getAllocNode(obj_node);
-
-                /* add to PointsTo set */
-                operand->addPointsTo(Pointer(alloc_node, 0));
+                if (alloc_node) {
+                    /* add to PointsTo set */
+                    operand->addPointsTo(Pointer(alloc_node, 0));
+                }
             }
             if (kind == PAGNode::GepObjNode) {
                 GepObjPN *gepobj_node = dyn_cast<GepObjPN>(pagnode);
                 PSNode *alloc_node = getAllocNode(gepobj_node);
-                uint64_t offset = getAllocNodeOffset(gepobj_node);
-                outs() << "offset: " << offset << "\n";
+                if (alloc_node) {
+                    uint64_t offset = getAllocNodeOffset(gepobj_node);
+                    //outs() << "offset: " << offset << "\n";
 
-                /* add to PointsTo set */
-                operand->addPointsTo(Pointer(alloc_node, offset));
+                    /* add to PointsTo set */
+                    operand->addPointsTo(Pointer(alloc_node, offset));
+                }
             }
         }
     }
@@ -218,12 +210,14 @@ void SVFPointerAnalysis::handleOperand(PSNode *operand) {
 
 PSNode *SVFPointerAnalysis::getAllocNode(ObjPN *node) {
     /* get SVF memory object (allocation site) */
-    const MemObj *mem = node->getMemObj();    
-    outs() << "RefVal: "; mem->getRefVal()->print(outs()); outs() << "\n";
+    const MemObj *mo = node->getMemObj();    
+    //outs() << "RefVal: "; mo->getRefVal()->print(outs()); outs() << "\n";
     /* get corresponding DG node */
-    PSNode *ref_node = pta->builder->getNode(mem->getRefVal());
+    PSNode *ref_node = pta->builder->getNode(mo->getRefVal());
     /* TODO: handle unexpected result */
-    assert(ref_node);
+    if (!ref_node) {
+        //assert(false);
+    }
 
     return ref_node;
 }
@@ -233,11 +227,13 @@ uint64_t SVFPointerAnalysis::getAllocNodeOffset(GepObjPN *node) {
     assert(ls.isConstantOffset());
 
     /* flat index */
-    unsigned idx = ls.getOffset();
-    outs() << "GepObjNode location set: " << idx << "\n";
+    unsigned offset = ls.getOffset();
+    /* offset in bytes */
+    unsigned offsetInBytes = ls.getAccOffset();
+    //outs() << "GepObjNode location set: " << offset << "\n";
 
     const MemObj *mo = node->getMemObj();
-    if (!(mo->isStruct() || mo->isArray())) {
+    if (!(mo->isStruct() || mo->isArray() || mo->isHeap())) {
         assert(false);
     }
 
@@ -246,21 +242,5 @@ uint64_t SVFPointerAnalysis::getAllocNodeOffset(GepObjPN *node) {
         return UNKNOWN_OFFSET;
     }
 
-    Type *type = mo->getTypeInfo()->getLLVMType();
-    const std::vector<FieldInfo>& infovec = SymbolTableInfo::Symbolnfo()->getFlattenFieldInfoVec(type);
-    assert(idx < infovec.size());
-
-    if (infovec[idx].isPartOfArray()) {
-        return UNKNOWN_OFFSET;
-    }
-
-    DataLayout *dl = SymbolTableInfo::getDataLayout();
-    uint64_t offset = 0;
-    for (unsigned int i = 0; i < idx; i++) {
-        const Type *ftype = infovec[i].getFlattenElemTy();
-        offset += dl->getTypeStoreSize((Type *)ftype);       
-    }
-
-    /* TODO: check if offset is valid */
-    return offset;
+    return offsetInBytes;
 }

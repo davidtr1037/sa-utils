@@ -45,17 +45,9 @@ public:
     PSNode *getAllocNode(ObjPN *node);
     uint64_t getAllocNodeOffset(GepObjPN *node);
 
-    //void visit(llvm::Function &f);
-    //void handleInstruction(llvm::Instruction *inst, PSNode *node);
-    //void handleLoad(llvm::LoadInst *inst);
-    //void handleStore(llvm::StoreInst *inst);
-    //void handleCall(llvm::StoreInst *inst, PSNode *node);
-    //void handleOperand(llvm::Value *addr);
-
     llvm::Module *module;
     LLVMPointerAnalysis *pta;
     AAPass *aa;
-    std::set<PSNode *> visited;
 };
 
 #endif

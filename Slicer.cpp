@@ -303,14 +303,16 @@ static int save_module(llvm::Module *M,
 //  The main class that represents slicer and covers the elementary
 //  functionality
 /// --------------------------------------------------------------------
-Slicer::Slicer(llvm::Module *mod, uint32_t o, AAPass *svfaa) :
+Slicer::Slicer(llvm::Module *mod, uint32_t o, AAPass *svfaa, std::string entryFunction) :
     M(mod), 
     opts(o),
     svfaa(svfaa),
-    PTA(new LLVMPointerAnalysis(mod, pta_field_sensitivie)),
-    RD(new LLVMReachingDefinitions(mod, PTA.get(), rd_strong_update_unknown, undefined_are_pure)) 
+    entryFunction(entryFunction),
+    /* we need the nodes of the whole program */
+    PTA(new LLVMPointerAnalysis(mod, pta_field_sensitivie, "main")),
+    RD(new LLVMReachingDefinitions(mod, PTA.get(), rd_strong_update_unknown, undefined_are_pure, ~((uint32_t)(0)), entryFunction)) 
 {
-        assert(mod && "Need module");
+    assert(mod && "Need module");
 }
 
 int Slicer::run()
@@ -361,7 +363,7 @@ bool Slicer::buildDG()
     tm.stop();
     tm.report("INFO: Points-to analysis took");
 
-    dg.build(&*M, PTA.get());
+    dg.build(M, PTA.get(), M->getFunction(entryFunction));
 
     // verify if the graph is built correctly
     // FIXME - do it optionally (command line argument)

@@ -50,7 +50,7 @@ int main(int argc, char *argv[]) {
     //ModRefAnalysis *mra = new ModRefAnalysis(module, ra, pass);
     //mra->run();
 
-    Slicer *slicer = new Slicer(module, 0, pass);
+    Slicer *slicer = new Slicer(module, 0, pass, "htmlParseErr");
     slicer->run();
 
     return 0;
