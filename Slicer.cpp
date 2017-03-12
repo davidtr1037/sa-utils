@@ -114,16 +114,17 @@ llvm::cl::opt<std::string> output("o",
                    "a .sliced suffix is used with the original module name."),
     llvm::cl::value_desc("filename"), llvm::cl::init(""), llvm::cl::cat(SlicingOpts));
 
-llvm::cl::opt<std::string> llvmfile(llvm::cl::Positional, llvm::cl::Required,
-    llvm::cl::desc("<input file>"), llvm::cl::init("test"), llvm::cl::cat(SlicingOpts));
+//llvm::cl::opt<std::string> llvmfile(llvm::cl::Positional, llvm::cl::Required,
+//    llvm::cl::desc("<input file>"), llvm::cl::init("test"), llvm::cl::cat(SlicingOpts));
+std::string llvmfile = "test";
 
-llvm::cl::opt<std::string> slicing_criterion("c", llvm::cl::Required,
-    llvm::cl::desc("Slice with respect to the call-sites of a given function\n"
-                   "i. e.: '-c foo' or '-c __assert_fail'. Special value is a 'ret'\n"
-                   "in which case the slice is taken with respect to the return value\n"
-                   "of the main() function. You can use comma separated list of more\n"
-                   "function calls, e.g. -c foo,bar\n"), llvm::cl::value_desc("func"),
-                   llvm::cl::init(""), llvm::cl::cat(SlicingOpts));
+//llvm::cl::opt<std::string> slicing_criterion("c", llvm::cl::Required,
+//    llvm::cl::desc("Slice with respect to the call-sites of a given function\n"
+//                   "i. e.: '-c foo' or '-c __assert_fail'. Special value is a 'ret'\n"
+//                   "in which case the slice is taken with respect to the return value\n"
+//                   "of the main() function. You can use comma separated list of more\n"
+//                   "function calls, e.g. -c foo,bar\n"), llvm::cl::value_desc("func"),
+//                   llvm::cl::init(""), llvm::cl::cat(SlicingOpts));
 
 llvm::cl::opt<uint64_t> pta_field_sensitivie("pta-field-sensitive",
     llvm::cl::desc("Make PTA field sensitive/insensitive. The offset in a pointer\n"
@@ -390,8 +391,7 @@ bool Slicer::mark()
     bool ret = dg.getCallSites(criterions, &callsites);
     got_slicing_criterion = true;
     if (!ret) {
-        errs() << "Did not find slicing criterion: "
-            << slicing_criterion << "\n";
+        errs() << "Did not find slicing criterion\n";
         got_slicing_criterion = false;
     }
 
