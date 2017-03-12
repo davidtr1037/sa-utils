@@ -22,10 +22,11 @@ using namespace llvm;
 /* ModRefAnalysis class */
 
 void ModRefAnalysis::run() {
-    Function *entry = module->getFunction(StringRef("htmlParseDocument"));
-    Function *f = module->getFunction(StringRef("htmlParseErr"));
+    Function *entry = module->getFunction(StringRef("main"));
+    Function *f = module->getFunction(StringRef("f"));
     computeMod(entry, f);
     dumpMod();
+    //dumpLoadToStoreMap();
 }
 
 void ModRefAnalysis::computeMod(Function *entry, Function *f) {
@@ -185,31 +186,9 @@ void ModRefAnalysis::addLoad(Instruction *load_inst) {
     PointsTo &pts = aa->getPTA()->getPts(id);
 
     refPts |= pts;
-}
-
-void ModRefAnalysis::checkReference(Instruction *load_inst) {
-    if (!isRelevant(load_inst)) {
-        return;
-    }
-
-    /* iterate over all the store instructions */
-    for (std::vector<Instruction *>::iterator i = store_insts.begin(); i != store_insts.end(); i++) {
-        Instruction *store_inst = *i;
-
-        if (!checkAlias(load_inst, store_inst)) {
-            continue;
-        }
-
-        /* update side effects */
-        outs() << "--------\n";
-        outs() << "load: ";
-        load_inst->print(outs());
-        outs() << " (" << load_inst->getParent()->getParent()->getName() << ")\n";
-        outs() << "store: ";
-        store_inst->print(outs());
-        outs() << " (" << store_inst->getParent()->getParent()->getName() << ")\n";
-
-        sideEffects.insert(store_inst);
+    for (PointsTo::iterator i = pts.begin(); i != pts.end(); ++i) {
+        NodeID node_id = *i;
+        objToLoadMap[node_id].insert(load_inst);
     }
 }
 
@@ -273,18 +252,36 @@ void ModRefAnalysis::getModRefInfo() {
         NodeID node_id = *i;
         set<Instruction *> store_insts = objToStoreMap[node_id];
         sideEffects.insert(store_insts.begin(), store_insts.end());
+
+        set<Instruction *> load_insts = objToLoadMap[node_id];
+        for (set<Instruction *>::iterator i = load_insts.begin(); i != load_insts.end(); i++) {
+            Instruction *load_inst = *i;
+            loadToStoreMap[load_inst].insert(store_insts.begin(), store_insts.end());
+        }
     }
 }
 
 void ModRefAnalysis::dumpMod() {
-    outs() << "side effects:\n";
+    outs() << "side effects (" << sideEffects.size() << ")\n";
     for (std::set<Instruction *>::iterator i = sideEffects.begin(); i != sideEffects.end(); i++) {
         Instruction *inst = *i;
         outs() <<  "[" << inst->getParent()->getParent()->getName() << "]";
         inst->print(outs());
         outs() << "\n";
     }
-    outs() << "side effects count: " << sideEffects.size() << "\n";
+}
+
+void ModRefAnalysis::dumpLoadToStoreMap() {
+    outs() << "LoadToStoreMap:\n";
+    for (LoadToStoreMap::iterator i = loadToStoreMap.begin(); i != loadToStoreMap.end(); i++) {
+        Instruction *load = i->first;
+        set<Instruction *> store_insts = i->second;
+        outs() << "LOAD: "; load->print(outs()); outs() << "\n";
+        for (set<Instruction *>::iterator j = store_insts.begin(); j != store_insts.end(); j++) {
+            Instruction *store_inst = *j;
+            outs() << "-- STORE: "; store_inst->print(outs()); outs() << "\n";
+        }
+    }
 }
 
 /* Temporary */

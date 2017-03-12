@@ -14,9 +14,11 @@
 class ModRefAnalysis {
 public:
     typedef std::map<NodeID, std::set<llvm::Instruction *> > ObjToStoreMap;
+    typedef std::map<NodeID, std::set<llvm::Instruction *> > ObjToLoadMap;
+    typedef std::map<llvm::Instruction *, std::set<llvm::Instruction *> > LoadToStoreMap;
 
     ModRefAnalysis(llvm::Module *module, ReachabilityAnalysis *ra, AAPass *aa) : 
-        ra(ra), module(module), aa(aa) 
+        module(module), ra(ra), aa(aa) 
     {
     
     }
@@ -50,6 +52,7 @@ public:
     void getModRefInfo();
 
     void dumpMod();
+    void dumpLoadToStoreMap();
 
     std::set<llvm::Instruction *> sideEffects;
 
@@ -57,11 +60,13 @@ private:
     llvm::Module *module;
     ReachabilityAnalysis *ra;
     AAPass *aa;
-    std::vector<llvm::Instruction *> store_insts;
 
+public:
     PointsTo modPts;
     ObjToStoreMap objToStoreMap;
     PointsTo refPts;
+    ObjToLoadMap objToLoadMap;
+    LoadToStoreMap loadToStoreMap;
 };
 
 #endif
