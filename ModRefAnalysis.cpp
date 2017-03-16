@@ -26,7 +26,8 @@ void ModRefAnalysis::run() {
     Function *f = module->getFunction(StringRef("f"));
     computeMod(entry, f);
     dumpMod();
-    //dumpLoadToStoreMap();
+    dumpLoadToStoreMap();
+    dumpAllocSiteToStoreMap();
 }
 
 void ModRefAnalysis::computeMod(Function *entry, Function *f) {
@@ -248,15 +249,45 @@ AliasAnalysis::Location ModRefAnalysis::getStoreLocation(StoreInst *inst) {
 
 void ModRefAnalysis::getModRefInfo() {
     PointsTo pts = modPts & refPts;
-    for (PointsTo::iterator i = pts.begin(); i != pts.end(); ++i) {
-        NodeID node_id = *i;
-        set<Instruction *> store_insts = objToStoreMap[node_id];
-        sideEffects.insert(store_insts.begin(), store_insts.end());
+    for (PointsTo::iterator ni = pts.begin(); ni != pts.end(); ++ni) {
+        NodeID node_id = *ni;
+        set<Instruction *> stores = objToStoreMap[node_id];
+        sideEffects.insert(stores.begin(), stores.end());
 
         set<Instruction *> load_insts = objToLoadMap[node_id];
         for (set<Instruction *>::iterator i = load_insts.begin(); i != load_insts.end(); i++) {
             Instruction *load_inst = *i;
-            loadToStoreMap[load_inst].insert(store_insts.begin(), store_insts.end());
+            loadToStoreMap[load_inst].insert(stores.begin(), stores.end());
+        }
+    }
+
+    computeAllocSiteToStoreMap();
+}
+
+void ModRefAnalysis::computeAllocSiteToStoreMap() {
+    for (std::set<Instruction *>::iterator i = sideEffects.begin(); i != sideEffects.end(); i++) {
+        Instruction *inst = *i; 
+        AliasAnalysis::Location storeLocation = getStoreLocation(dyn_cast<StoreInst>(inst));
+        NodeID id = aa->getPTA()->getPAG()->getValueNode(storeLocation.Ptr);
+        PointsTo &pts = aa->getPTA()->getPts(id);
+
+        for (PointsTo::iterator ni = pts.begin(); ni != pts.end(); ++ni) {
+            NodeID nodeId = *ni;
+            PAGNode *pagNode = aa->getPTA()->getPAG()->getPAGNode(nodeId);
+            ObjPN *obj = dyn_cast<ObjPN>(pagNode);
+            assert(obj);
+
+            /* get allocation site value */
+            const MemObj *mo = obj->getMemObj();    
+            const Value *allocSite = mo->getRefVal();
+            /* get offset in bytes */
+            uint64_t offset = 0;
+            if (obj->getNodeKind() == PAGNode::GepObjNode) {
+                GepObjPN *gepObj = dyn_cast<GepObjPN>(obj);
+                offset = gepObj->getLocationSet().getAccOffset(); 
+            }
+            /* update store instructions */
+            allocSiteToStoreMap[std::make_pair(allocSite, offset)].insert(inst);  
         }
     }
 }
@@ -275,11 +306,28 @@ void ModRefAnalysis::dumpLoadToStoreMap() {
     outs() << "LoadToStoreMap:\n";
     for (LoadToStoreMap::iterator i = loadToStoreMap.begin(); i != loadToStoreMap.end(); i++) {
         Instruction *load = i->first;
-        set<Instruction *> store_insts = i->second;
+        set<Instruction *> stores = i->second;
         outs() << "LOAD: "; load->print(outs()); outs() << "\n";
-        for (set<Instruction *>::iterator j = store_insts.begin(); j != store_insts.end(); j++) {
+        for (set<Instruction *>::iterator j = stores.begin(); j != stores.end(); j++) {
             Instruction *store_inst = *j;
             outs() << "-- STORE: "; store_inst->print(outs()); outs() << "\n";
+        }
+    }
+}
+
+void ModRefAnalysis::dumpAllocSiteToStoreMap() {
+    outs() << "AllocSiteToStoreMap:\n";
+    for (AllocSiteToStoreMap::iterator i = allocSiteToStoreMap.begin(); i != allocSiteToStoreMap.end(); i++) {
+        std::pair<const Value *, uint64_t> key = i->first;
+        set<Instruction *> stores = i->second;
+        const Value *allocSite = key.first;
+        uint64_t offset = key.second;
+        outs() << "AS: "; allocSite->print(outs()); outs() << "\n";
+        outs() << "OFFSET: " << offset << "\n";
+
+        for (set<Instruction *>::iterator j = stores.begin(); j != stores.end(); j++) {
+            Instruction *store = *j;
+            outs() << "-- STORE: "; store->print(outs()); outs() << "\n";
         }
     }
 }
