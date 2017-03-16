@@ -19,7 +19,7 @@ using namespace llvm;
 
 void ReachabilityAnalysis::analyze() {
     computeReachableFunctions();
-    removeUnreachableFunctions();
+    //removeUnreachableFunctions();
 }
 
 void ReachabilityAnalysis::computeReachableFunctions() {

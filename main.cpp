@@ -47,11 +47,11 @@ int main(int argc, char *argv[]) {
     pm.add(pass);
     pm.run(*module);
 
-    //ModRefAnalysis *mra = new ModRefAnalysis(module, ra, pass);
-    //mra->run();
+    ModRefAnalysis *mra = new ModRefAnalysis(module, ra, pass);
+    mra->run();
 
-    Slicer *slicer = new Slicer(module, 0, pass, "htmlParseErr");
-    slicer->run();
+    //Slicer *slicer = new Slicer(module, 0, pass, "f");
+    //slicer->run();
 
     return 0;
 }
