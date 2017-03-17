@@ -19,6 +19,7 @@ public:
     }
 
     void annotate();
+    void annotateStores(std::set<llvm::Instruction *> &stores);
     void annotateStore(llvm::Instruction *inst);
 
 private:

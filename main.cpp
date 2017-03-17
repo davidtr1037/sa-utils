@@ -21,6 +21,7 @@
 #include "ReachabilityAnalysis.h"
 #include "AAPass.h"
 #include "ModRefAnalysis.h"
+#include "Annotator.h"
 #include "Slicer.h"
 
 using namespace std;
@@ -50,8 +51,14 @@ int main(int argc, char *argv[]) {
     ModRefAnalysis *mra = new ModRefAnalysis(module, ra, pass);
     mra->run();
 
-    //Slicer *slicer = new Slicer(module, 0, pass, "f");
-    //slicer->run();
+    Annotator *annotator = new Annotator(module, mra);
+    annotator->annotate();
+
+    std::vector<std::string> criterions;
+    criterions.push_back("__crit_0");
+    //criterions.push_back("__crit_1");
+    Slicer *slicer = new Slicer(module, 0, pass, "f", criterions);
+    slicer->run();
 
     return 0;
 }

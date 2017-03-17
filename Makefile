@@ -33,7 +33,8 @@ SOURCES=\
 		AAPass.cpp \
 		ModRefAnalysis.cpp \
 		SVFPointerAnalysis.cpp \
-        Slicer.cpp
+        Slicer.cpp \
+        Annotator.cpp
 
 TARGET_DEPS=$(patsubst %.cpp,%.o,$(SOURCES)) main.o
 TARGET=main

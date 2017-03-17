@@ -14,7 +14,16 @@
 using namespace llvm;
 
 void Annotator::annotate() {
-    for (std::set<Instruction *>::iterator i = mra->sideEffects.begin(); i != mra->sideEffects.end(); i++) {
+    for (ModRefAnalysis::AllocSiteToStoreMap::iterator i = mra->allocSiteToStoreMap.begin(); i != mra->allocSiteToStoreMap.end(); i++) {
+        std::pair<const Value *, uint64_t> key = i->first;
+        std::set<Instruction *> stores = i->second;
+        annotateStores(stores);
+        id++;
+    }
+}
+
+void Annotator::annotateStores(std::set<Instruction *> &stores) {
+    for (std::set<Instruction *>::iterator i = stores.begin(); i != stores.end(); i++) {
         Instruction *inst = *i;
         annotateStore(inst);
     }
@@ -31,10 +40,11 @@ void Annotator::annotateStore(Instruction *inst) {
     loadInst->insertAfter(inst);
 
     std::string fname = std::string("__crit_") + std::to_string(id);
+    PointerType *pointerType = dyn_cast<PointerType>(pointer->getType());
     module->getOrInsertFunction(
         fname,
         Type::getVoidTy(module->getContext()), 
-        Type::getInt32Ty(module->getContext()), 
+        pointerType->getElementType(),
         NULL
     );
     Function *criterionFunction = module->getFunction(fname);
