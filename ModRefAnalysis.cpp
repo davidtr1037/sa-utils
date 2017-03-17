@@ -23,8 +23,12 @@ using namespace llvm;
 
 void ModRefAnalysis::run() {
     Function *entry = module->getFunction(StringRef("main"));
+    assert(entry);
     Function *f = module->getFunction(StringRef("f"));
+    assert(f);
+
     computeMod(entry, f);
+
     dumpMod();
     dumpLoadToStoreMap();
     dumpAllocSiteToStoreMap();

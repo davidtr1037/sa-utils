@@ -3,6 +3,8 @@
 
 #include <stdbool.h>
 #include <iostream>
+#include <set>
+#include <map>
 
 #include <llvm/IR/Module.h>
 #include <llvm/IR/Instruction.h>
