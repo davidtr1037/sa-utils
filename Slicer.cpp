@@ -274,19 +274,23 @@ static bool write_module(llvm::Module *M)
 
 static int verify_and_write_module(llvm::Module *M)
 {
+    int code = 1;
+
     if (!verify_module(M)) {
         errs() << "ERR: Verifying module failed, the IR is not valid\n";
         errs() << "INFO: Saving anyway so that you can check it\n";
-        return 1;
     }
 
     if (!write_module(M)) {
         errs() << "Saving sliced module failed\n";
-        return 1;
+        goto cleanup;
     }
 
+    code = 0;
+
+cleanup:
     // exit code
-    return 0;
+    return code;
 }
 
 static int save_module(llvm::Module *M,
@@ -304,11 +308,13 @@ static int save_module(llvm::Module *M,
 //  The main class that represents slicer and covers the elementary
 //  functionality
 /// --------------------------------------------------------------------
-Slicer::Slicer(llvm::Module *mod, uint32_t o, AAPass *svfaa, std::string entryFunction) :
+Slicer::Slicer(llvm::Module *mod, uint32_t o, AAPass *svfaa, 
+    std::string entryFunction, std::vector<std::string> criterions) :
     M(mod), 
     opts(o),
     svfaa(svfaa),
     entryFunction(entryFunction),
+    criterions(criterions),
     /* we need the nodes of the whole program */
     PTA(new LLVMPointerAnalysis(mod, pta_field_sensitivie, "main")),
     RD(new LLVMReachingDefinitions(mod, PTA.get(), rd_strong_update_unknown, undefined_are_pure, ~((uint32_t)(0)), entryFunction)) 
@@ -348,7 +354,7 @@ int Slicer::run()
     // fix linkage of declared functions (if needs to be fixed)
     make_declarations_external();
 
-    return save_module(M, true);
+    return save_module(M, false);
 }
 
 bool Slicer::buildDG()
@@ -381,8 +387,7 @@ bool Slicer::mark()
     debug::TimeMeasure tm;
     std::set<LLVMNode *> callsites;
 
-    std::vector<std::string> criterions; // = splitList(slicing_criterion);
-    criterions.push_back("__crit");
+    //std::vector<std::string> criterions; // = splitList(slicing_criterion);
     assert(!criterions.empty() && "Do not have the slicing criterion");
 
     // check for slicing criterion here, because
@@ -429,8 +434,9 @@ bool Slicer::mark()
     slice_id = 0xdead;
 
     tm.start();
-    for (LLVMNode *start : callsites)
+    for (LLVMNode *start : callsites) {
         slice_id = slicer.mark(start, slice_id);
+    }
 
     tm.stop();
     tm.report("INFO: Finding dependent nodes took");

@@ -25,13 +25,14 @@ protected:
     uint32_t opts = 0;
     AAPass *svfaa;
     std::string entryFunction;
+    std::vector<std::string> criterions;
     std::unique_ptr<LLVMPointerAnalysis> PTA;
     std::unique_ptr<LLVMReachingDefinitions> RD;
     LLVMDependenceGraph dg;
     LLVMSlicer slicer;
 
 public:
-    Slicer(llvm::Module *mod, uint32_t o, AAPass *svfaa, std::string entryFunction);
+    Slicer(llvm::Module *mod, uint32_t o, AAPass *svfaa, std::string entryFunction, std::vector<std::string> criterions);
     int run();
     bool buildDG();
     bool mark();
