@@ -13,7 +13,8 @@ INCLUDES=\
     -I$(LLVM_OBJ_PATH)/include/ \
     -I$(WPA_PATH)/include \
     -I$(DG_PATH)/src \
-    -I$(DG_PATH)/tools
+    -I$(DG_PATH)/tools \
+    -I.
 
 CXXFLAGS=$(INCLUDES) -DHAVE_LLVM -DENABLE_CFG -D__STDC_LIMIT_MACROS -D__STDC_CONSTANT_MACROS -std=gnu++11 -g -fno-rtti
 
@@ -34,7 +35,10 @@ SOURCES=\
 		ModRefAnalysis.cpp \
 		SVFPointerAnalysis.cpp \
         Slicer.cpp \
-        Annotator.cpp
+        Annotator.cpp \
+        Cloner.cpp \
+        SliceGenerator.cpp
+
 
 TARGET_DEPS=$(patsubst %.cpp,%.o,$(SOURCES)) main.o
 TARGET=main
