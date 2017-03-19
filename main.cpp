@@ -22,7 +22,9 @@
 #include "AAPass.h"
 #include "ModRefAnalysis.h"
 #include "Annotator.h"
+#include "Cloner.h"
 #include "Slicer.h"
+#include "SliceGenerator.h"
 
 using namespace std;
 using namespace llvm;
@@ -41,24 +43,25 @@ int main(int argc, char *argv[]) {
     ReachabilityAnalysis *ra = new ReachabilityAnalysis(module);
     ra->analyze(); 
 
-    AAPass *pass = new AAPass();
-    pass->setPAType(PointerAnalysis::AndersenWaveDiff_WPA);
+    AAPass *aa = new AAPass();
+    aa->setPAType(PointerAnalysis::AndersenWaveDiff_WPA);
 
     legacy::PassManager pm;
-    pm.add(pass);
+    pm.add(aa);
     pm.run(*module);
 
-    ModRefAnalysis *mra = new ModRefAnalysis(module, ra, pass);
+    ModRefAnalysis *mra = new ModRefAnalysis(module, ra, aa);
     mra->run();
 
     Annotator *annotator = new Annotator(module, mra);
     annotator->annotate();
 
-    std::vector<std::string> criterions;
-    criterions.push_back("__crit_0");
-    //criterions.push_back("__crit_1");
-    Slicer *slicer = new Slicer(module, 0, pass, "f", criterions);
-    slicer->run();
+    Cloner *cloner = new Cloner(module, mra);
+    cloner->clone("f");
+
+    SliceGenerator *sg = new SliceGenerator(module, aa, mra, cloner);
+    sg->generate();
+    sg->dumpSlices();
 
     return 0;
 }
