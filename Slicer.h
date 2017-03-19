@@ -11,6 +11,7 @@
 #include "llvm/analysis/ReachingDefinitions/ReachingDefinitions.h"
 
 #include "AAPass.h"
+#include "Cloner.h"
 
 using namespace dg;
 using namespace dg::analysis::rd;
@@ -32,7 +33,7 @@ protected:
     LLVMSlicer slicer;
 
 public:
-    Slicer(llvm::Module *mod, uint32_t o, AAPass *svfaa, std::string entryFunction, std::vector<std::string> criterions);
+    Slicer(llvm::Module *mod, uint32_t o, AAPass *svfaa, Cloner *cloner, std::string entryFunction, std::vector<std::string> criterions);
     int run();
     bool buildDG();
     bool mark();

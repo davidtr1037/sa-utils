@@ -79,6 +79,7 @@
 
 #include "SVFPointerAnalysis.h"
 
+#include "Cloner.h"
 #include "Slicer.h"
 
 using namespace dg;
@@ -308,7 +309,7 @@ static int save_module(llvm::Module *M,
 //  The main class that represents slicer and covers the elementary
 //  functionality
 /// --------------------------------------------------------------------
-Slicer::Slicer(llvm::Module *mod, uint32_t o, AAPass *svfaa, 
+Slicer::Slicer(llvm::Module *mod, uint32_t o, AAPass *svfaa, Cloner *cloner,
     std::string entryFunction, std::vector<std::string> criterions) :
     M(mod), 
     opts(o),
@@ -320,6 +321,7 @@ Slicer::Slicer(llvm::Module *mod, uint32_t o, AAPass *svfaa,
     RD(new LLVMReachingDefinitions(mod, PTA.get(), rd_strong_update_unknown, undefined_are_pure, ~((uint32_t)(0)), entryFunction)) 
 {
     assert(mod && "Need module");
+    slicer.setCloner(cloner);
 }
 
 int Slicer::run()
@@ -431,7 +433,7 @@ bool Slicer::mark()
     // FIXME: do this optional
     slicer.keepFunctionUntouched("__VERIFIER_assume");
     slicer.keepFunctionUntouched("__VERIFIER_exit");
-    slice_id = 0xdead;
+    slice_id = 1; //0xdead;
 
     tm.start();
     for (LLVMNode *start : callsites) {
