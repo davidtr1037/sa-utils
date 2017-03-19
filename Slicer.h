@@ -44,6 +44,9 @@ public:
     void make_declarations_external();
     const LLVMDependenceGraph& getDG() const { return dg; }
     LLVMDependenceGraph& getDG() { return dg; }
+    void setSliceId(uint32_t id) {
+        slice_id = id;
+    }
 };
 
 #endif /* SLICER_H */

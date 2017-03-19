@@ -322,6 +322,7 @@ Slicer::Slicer(llvm::Module *mod, uint32_t o, AAPass *svfaa, Cloner *cloner,
 {
     assert(mod && "Need module");
     slicer.setCloner(cloner);
+    slice_id = 0xdead;
 }
 
 int Slicer::run()
@@ -433,7 +434,7 @@ bool Slicer::mark()
     // FIXME: do this optional
     slicer.keepFunctionUntouched("__VERIFIER_assume");
     slicer.keepFunctionUntouched("__VERIFIER_exit");
-    slice_id = 1; //0xdead;
+    //slice_id = 1; //0xdead;
 
     tm.start();
     for (LLVMNode *start : callsites) {
