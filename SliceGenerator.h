@@ -13,8 +13,8 @@
 class SliceGenerator {
 public:
 
-    SliceGenerator(llvm::Module *module, AAPass *aa, ModRefAnalysis *mra, Cloner *cloner) :
-        module(module), aa(aa), mra(mra), cloner(cloner)
+    SliceGenerator(llvm::Module *module, AAPass *aa, ModRefAnalysis *mra, Cloner *cloner, std::string target) :
+        module(module), aa(aa), mra(mra), cloner(cloner), target(target)
     {
 
     }
@@ -31,6 +31,7 @@ private:
     AAPass *aa;
     ModRefAnalysis *mra;
     Cloner *cloner;
+    std::string target;
 };
 
 #endif

@@ -14,19 +14,23 @@ public:
     Annotator(llvm::Module *module, ModRefAnalysis *mra) :
         module(module), mra(mra)
     {
-        id = 0;
-        argId = 0;
+        sliceId = 1;
+        argId = 1;
     }
 
     void annotate();
+
     void annotateStores(std::set<llvm::Instruction *> &stores);
+
     void annotateStore(llvm::Instruction *inst);
+
+    static std::string getAnnotatedName(uint32_t id);
 
 private:
 
     llvm::Module *module;
     ModRefAnalysis *mra;
-    uint32_t id;
+    uint32_t sliceId;
     uint32_t argId;
 };
 

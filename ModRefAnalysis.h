@@ -20,8 +20,8 @@ public:
     typedef std::map<llvm::Instruction *, std::set<llvm::Instruction *> > LoadToStoreMap;
     typedef std::map<std::pair<const llvm::Value *, uint64_t>, std::set<llvm::Instruction *> > AllocSiteToStoreMap;
 
-    ModRefAnalysis(llvm::Module *module, ReachabilityAnalysis *ra, AAPass *aa) : 
-        module(module), ra(ra), aa(aa) 
+    ModRefAnalysis(llvm::Module *module, ReachabilityAnalysis *ra, AAPass *aa, std::string entry, std::string target) :
+        module(module), ra(ra), aa(aa), entry(entry), target(target)
     {
     
     }
@@ -40,21 +40,13 @@ public:
 
     void addLoad(llvm::Instruction *load_inst);
 
-    void checkReference(llvm::Instruction *inst);
+    void getModRefInfo();
 
-    bool isRelevant(llvm::Instruction *load_inst);
-
-    bool isNonLocalObject(NodeID id);
-
-    bool checkAlias(llvm::Instruction *load, llvm::Instruction *store);
+    void computeAllocSiteToStoreMap();
 
     llvm::AliasAnalysis::Location getLoadLocation(llvm::LoadInst *inst);
 
     llvm::AliasAnalysis::Location getStoreLocation(llvm::StoreInst *inst);
-
-    void getModRefInfo();
-
-    void computeAllocSiteToStoreMap();
 
     void dumpMod();
 
@@ -66,6 +58,8 @@ private:
     llvm::Module *module;
     ReachabilityAnalysis *ra;
     AAPass *aa;
+    std::string entry;
+    std::string target;
 
 public:
     PointsTo modPts;

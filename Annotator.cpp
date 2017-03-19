@@ -18,7 +18,7 @@ void Annotator::annotate() {
         std::pair<const Value *, uint64_t> key = i->first;
         std::set<Instruction *> stores = i->second;
         annotateStores(stores);
-        id++;
+        sliceId++;
     }
 }
 
@@ -33,13 +33,17 @@ void Annotator::annotateStore(Instruction *inst) {
     StoreInst *store = dyn_cast<StoreInst>(inst);
     Value *pointer = store->getPointerOperand();
 
-    /* generate a unique name */
+    /* generate a unique argument name */
     std::string *name = new std::string(std::string("__crit_arg_") + std::to_string(argId++));
+    /* insert load */
     LoadInst *loadInst = new LoadInst(pointer, name->data());
     loadInst->setAlignment(store->getAlignment());
     loadInst->insertAfter(inst);
 
-    std::string fname = std::string("__crit_") + std::to_string(id);
+    /* generate a unique function name */
+    std::string fname = getAnnotatedName(sliceId);
+
+    /* create criterion function */
     PointerType *pointerType = dyn_cast<PointerType>(pointer->getType());
     module->getOrInsertFunction(
         fname,
@@ -49,10 +53,13 @@ void Annotator::annotateStore(Instruction *inst) {
     );
     Function *criterionFunction = module->getFunction(fname);
 
-    dyn_cast<Value>(loadInst)->dump();
+    /* insert call */
     std::vector<Value* > args;
     args.push_back(dyn_cast<Value>(loadInst));
     CallInst *callInst = CallInst::Create(criterionFunction, args, "");
     callInst->insertAfter(loadInst);
-    
+}
+
+std::string Annotator::getAnnotatedName(uint32_t id) {
+    return std::string("__crit_") + std::to_string(id);
 }

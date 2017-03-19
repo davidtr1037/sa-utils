@@ -22,12 +22,12 @@ using namespace llvm;
 /* ModRefAnalysis class */
 
 void ModRefAnalysis::run() {
-    Function *entry = module->getFunction(StringRef("main"));
-    assert(entry);
-    Function *f = module->getFunction(StringRef("f"));
-    assert(f);
+    Function *entryFunction = module->getFunction(entry);
+    assert(entryFunction);
+    Function *targetFUnction = module->getFunction(target);
+    assert(targetFUnction);
 
-    computeMod(entry, f);
+    computeMod(entryFunction, targetFUnction);
 
     dumpMod();
     dumpLoadToStoreMap();
@@ -197,60 +197,6 @@ void ModRefAnalysis::addLoad(Instruction *load_inst) {
     }
 }
 
-bool ModRefAnalysis::isRelevant(Instruction *load_inst) {
-    AliasAnalysis::Location load_location = getLoadLocation(dyn_cast<LoadInst>(load_inst));
-    NodeID id = aa->getPTA()->getPAG()->getValueNode(load_location.Ptr);
-    PointsTo &pts = aa->getPTA()->getPts(id);
-
-    for (PointsTo::iterator it = pts.begin(), eit = pts.end(); it !=eit; ++it) {
-        if (isNonLocalObject(*it)) {
-            return true;
-        }
-    }
-    return false;
-}
-
-bool ModRefAnalysis::isNonLocalObject(NodeID id) {
-    const MemObj* obj = aa->getPTA()->getPAG()->getObject(id);
-    assert(obj && "object not found!!");
-
-    if (obj->isGlobalObj() || obj->isHeap()) {
-        return true;
-    }
-
-    if (obj->isStack()) {
-        return false;
-    }
-
-    return false;
-}
-
-bool ModRefAnalysis::checkAlias(Instruction *load, Instruction *store) {
-    AliasAnalysis::Location load_location = getLoadLocation(dyn_cast<LoadInst>(load));
-    AliasAnalysis::Location store_location = getStoreLocation(dyn_cast<StoreInst>(store));
-
-    /* check aliasing */
-    AliasAnalysis::AliasResult result = aa->alias(load_location, store_location);
-    if (result == AliasAnalysis::NoAlias) {
-        return false;
-    }
-    
-    NodeID id = aa->getPTA()->getPAG()->getValueNode(store_location.Ptr);
-    PointsTo &pts = aa->getPTA()->getPts(id);
-
-    return true;
-}
-
-AliasAnalysis::Location ModRefAnalysis::getLoadLocation(LoadInst *inst) {
-    Value *addr = inst->getPointerOperand();
-    return AliasAnalysis::Location(addr);
-}
-
-AliasAnalysis::Location ModRefAnalysis::getStoreLocation(StoreInst *inst) {
-    Value *addr = inst->getPointerOperand();
-    return AliasAnalysis::Location(addr);
-}
-
 void ModRefAnalysis::getModRefInfo() {
     PointsTo pts = modPts & refPts;
     for (PointsTo::iterator ni = pts.begin(); ni != pts.end(); ++ni) {
@@ -294,6 +240,16 @@ void ModRefAnalysis::computeAllocSiteToStoreMap() {
             allocSiteToStoreMap[std::make_pair(allocSite, offset)].insert(inst);  
         }
     }
+}
+
+AliasAnalysis::Location ModRefAnalysis::getLoadLocation(LoadInst *inst) {
+    Value *addr = inst->getPointerOperand();
+    return AliasAnalysis::Location(addr);
+}
+
+AliasAnalysis::Location ModRefAnalysis::getStoreLocation(StoreInst *inst) {
+    Value *addr = inst->getPointerOperand();
+    return AliasAnalysis::Location(addr);
 }
 
 void ModRefAnalysis::dumpMod() {

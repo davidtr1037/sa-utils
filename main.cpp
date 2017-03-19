@@ -50,7 +50,7 @@ int main(int argc, char *argv[]) {
     pm.add(aa);
     pm.run(*module);
 
-    ModRefAnalysis *mra = new ModRefAnalysis(module, ra, aa);
+    ModRefAnalysis *mra = new ModRefAnalysis(module, ra, aa, "main", "f");
     mra->run();
 
     Annotator *annotator = new Annotator(module, mra);
@@ -59,7 +59,7 @@ int main(int argc, char *argv[]) {
     Cloner *cloner = new Cloner(module, mra);
     cloner->clone("f");
 
-    SliceGenerator *sg = new SliceGenerator(module, aa, mra, cloner);
+    SliceGenerator *sg = new SliceGenerator(module, aa, mra, cloner, "f");
     sg->generate();
     sg->dumpSlices();
 

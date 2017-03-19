@@ -4,6 +4,7 @@
 #include <llvm/IR/Module.h>
 
 #include "ModRefAnalysis.h"
+#include "Annotator.h"
 #include "Cloner.h"
 #include "Slicer.h"
 #include "SliceGenerator.h"
@@ -13,18 +14,18 @@ using namespace llvm;
 void SliceGenerator::generate() {
     unsigned int nslices = mra->allocSiteToStoreMap.size();
     for (unsigned int i = 0; i < nslices; i++) {
+        /* TODO: ... */
+        uint32_t sliceId = i + 1;
+
         /* set criterion function */
         std::vector<std::string> criterions;
-        /* TODO: the name should come from the annotator */
-        std::string fname = std::string("__crit_") + std::to_string(i);
-        criterions.push_back(fname);
+        criterions.push_back(Annotator::getAnnotatedName(sliceId));
 
-        /* create slice */
-        /* TODO: remove hard coded function */
-        Slicer *slicer = new Slicer(module, 0, aa, cloner, "f", criterions);
-        uint32_t sliceId = i + 1;
+        /* generate slice */
+        Slicer *slicer = new Slicer(module, 0, aa, cloner, target, criterions);
         slicer->setSliceId(sliceId);
         slicer->run();
+
         /* TODO: what happens with allocated instructions? (ret/branch/...) */
         delete slicer;
     }

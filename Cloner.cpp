@@ -21,10 +21,11 @@ void Cloner::clone(std::string name) {
     unsigned int nslices = mra->allocSiteToStoreMap.size();
     errs() << "creating " << nslices << " slices\n";
 
-    for (unsigned int i = 0; i < nslices; i++) {
-        ValueToValueMapTy *vmap = new ValueToValueMapTy();
-        Function *cloned = CloneFunction(entry, *vmap, true);
+    for (uint32_t i = 0; i < nslices; i++) {
         uint32_t sliceId = i + 1;
+        ValueToValueMapTy *vmap = new ValueToValueMapTy();
+        /* TODO: check the last parameter! */
+        Function *cloned = CloneFunction(entry, *vmap, true);
         functionMap[entry][sliceId] = std::make_pair(cloned, vmap);
     }
 
