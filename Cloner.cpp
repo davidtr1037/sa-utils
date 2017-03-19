@@ -15,23 +15,16 @@
 
 using namespace llvm;
 
-class CloneRemapper: public ValueMapTypeRemapper {
-public:
-    Type *remapType(Type *srcTy)
-    {
-        return srcTy;
-    }
-};
-
 void Cloner::clone(std::string name) {
     Function *entry = module->getFunction(StringRef(name));
 
     unsigned int nslices = mra->allocSiteToStoreMap.size();
     errs() << "creating " << nslices << " slices\n";
 
-    for (unsigned int sliceId = 0; sliceId < nslices; sliceId++) {
+    for (unsigned int i = 0; i < nslices; i++) {
         ValueToValueMapTy *vmap = new ValueToValueMapTy();
         Function *cloned = CloneFunction(entry, *vmap, true);
+        uint32_t sliceId = i + 1;
         functionMap[entry][sliceId] = std::make_pair(cloned, vmap);
     }
 
@@ -73,7 +66,7 @@ Cloner::SliceMap *Cloner::getSlices(llvm::Function *function) {
 
 Cloner::SliceInfo *Cloner::getSlice(llvm::Function *function, uint32_t sliceId) {
     SliceMap *sliceMap = getSlices(function);
-    if (!function) {
+    if (!sliceMap) {
         return 0;
     }
 
