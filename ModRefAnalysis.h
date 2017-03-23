@@ -19,6 +19,7 @@ public:
     typedef std::map<NodeID, std::set<llvm::Instruction *> > ObjToLoadMap;
     typedef std::map<llvm::Instruction *, std::set<llvm::Instruction *> > LoadToStoreMap;
     typedef std::map<std::pair<const llvm::Value *, uint64_t>, std::set<llvm::Instruction *> > AllocSiteToStoreMap;
+    typedef std::map<std::pair<const llvm::Value *, uint64_t>, uint32_t> AllocSiteToIdMap;
 
     ModRefAnalysis(llvm::Module *module, ReachabilityAnalysis *ra, AAPass *aa, std::string entry, std::string target) :
         module(module), ra(ra), aa(aa), entry(entry), target(target)
@@ -44,6 +45,8 @@ public:
 
     void computeAllocSiteToStoreMap();
 
+    void computeAllocSiteToIdMap();
+
     llvm::AliasAnalysis::Location getLoadLocation(llvm::LoadInst *inst);
 
     llvm::AliasAnalysis::Location getStoreLocation(llvm::StoreInst *inst);
@@ -66,9 +69,11 @@ public:
     ObjToStoreMap objToStoreMap;
     PointsTo refPts;
     ObjToLoadMap objToLoadMap;
+    /* TODO: check if required... */
     LoadToStoreMap loadToStoreMap;
     std::set<llvm::Instruction *> sideEffects;
     AllocSiteToStoreMap allocSiteToStoreMap;
+    AllocSiteToIdMap allocSiteToIdMap;
 };
 
 #endif

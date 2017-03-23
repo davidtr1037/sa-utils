@@ -212,6 +212,7 @@ void ModRefAnalysis::getModRefInfo() {
     }
 
     computeAllocSiteToStoreMap();
+    computeAllocSiteToIdMap();
 }
 
 void ModRefAnalysis::computeAllocSiteToStoreMap() {
@@ -239,6 +240,13 @@ void ModRefAnalysis::computeAllocSiteToStoreMap() {
             /* update store instructions */
             allocSiteToStoreMap[std::make_pair(allocSite, offset)].insert(inst);  
         }
+    }
+}
+
+void ModRefAnalysis::computeAllocSiteToIdMap() {
+    uint32_t id = 1;
+    for (AllocSiteToStoreMap::iterator i = allocSiteToStoreMap.begin(); i != allocSiteToStoreMap.end(); i++) {
+        allocSiteToIdMap[i->first] = id++;
     }
 }
 
