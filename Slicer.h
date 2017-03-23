@@ -34,6 +34,8 @@ protected:
 
 public:
     Slicer(llvm::Module *mod, uint32_t o, AAPass *svfaa, Cloner *cloner, std::string entryFunction, std::vector<std::string> criterions);
+    ~Slicer();
+
     int run();
     bool buildDG();
     bool mark();

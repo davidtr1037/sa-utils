@@ -578,3 +578,7 @@ void Slicer::make_declarations_external()
         }
     }
 }
+
+Slicer::~Slicer() {
+    clearConstructedFunctions();
+}
