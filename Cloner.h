@@ -22,6 +22,8 @@ public:
 
     }
 
+    ~Cloner();
+
     void clone(std::string name);
 
     SliceMap *getSlices(llvm::Function *function);

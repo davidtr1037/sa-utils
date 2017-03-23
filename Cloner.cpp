@@ -23,9 +23,16 @@ void Cloner::clone(std::string name) {
 
     for (uint32_t i = 0; i < nslices; i++) {
         uint32_t sliceId = i + 1;
-        ValueToValueMapTy *vmap = new ValueToValueMapTy();
+
         /* TODO: check the last parameter! */
+        ValueToValueMapTy *vmap = new ValueToValueMapTy();
         Function *cloned = CloneFunction(entry, *vmap, true);
+
+        /* set function name */
+        std::string clonedName = name + std::string("_clone_") + std::to_string(sliceId);
+        cloned->setName(StringRef(clonedName));
+
+        /* update map */
         functionMap[entry][sliceId] = std::make_pair(cloned, vmap);
     }
 
@@ -77,4 +84,17 @@ Cloner::SliceInfo *Cloner::getSlice(llvm::Function *function, uint32_t sliceId) 
     }
 
     return &(entry->second);
+}
+
+Cloner::~Cloner() {
+    for (FunctionMap::iterator i = functionMap.begin(); i != functionMap.end(); i++) {
+        SliceMap &sliceMap = i->second;
+        for (SliceMap::iterator j = sliceMap.begin(); j != sliceMap.end(); j++) {
+            SliceInfo &sliceInfo = j->second;
+            Function *cloned = sliceInfo.first;
+            delete cloned;
+            ValueToValueMapTy *vmap = sliceInfo.second;
+            delete vmap;
+        }
+    }
 }
