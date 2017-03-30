@@ -393,6 +393,12 @@ bool Slicer::mark()
     //std::vector<std::string> criterions; // = splitList(slicing_criterion);
     assert(!criterions.empty() && "Do not have the slicing criterion");
 
+    for (std::string c : criterions) {
+        if (c == "ret") {
+            callsites.insert(dg.getExit());
+        }
+    }
+
     // check for slicing criterion here, because
     // we might have built new subgraphs that contain
     // it during points-to analysis

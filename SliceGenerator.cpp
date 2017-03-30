@@ -17,7 +17,11 @@ void SliceGenerator::generate() {
 
         /* set criterion function */
         std::vector<std::string> criterions;
-        criterions.push_back(Annotator::getAnnotatedName(sliceId));
+        if (sliceId == mra->retSliceId) {
+            criterions.push_back("ret");
+        } else {
+            criterions.push_back(Annotator::getAnnotatedName(sliceId));
+        }
 
         /* generate slice */
         Slicer *slicer = new Slicer(module, 0, aa, cloner, target, criterions);

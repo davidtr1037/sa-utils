@@ -21,10 +21,6 @@ public:
 
     void annotate();
 
-    void annotateReturns(llvm::Function *f, uint32_t sliceId);
-
-    void annotateReturn(llvm::Instruction *inst, uint32_t sliceId);
-
     void annotateStores(std::set<llvm::Instruction *> &stores, uint32_t sliceId);
 
     void annotateStore(llvm::Instruction *inst, uint32_t sliceId);
