@@ -5,6 +5,8 @@
 #include <iostream>
 
 #include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instruction.h>
 
 #include "ModRefAnalysis.h"
 
@@ -14,15 +16,18 @@ public:
     Annotator(llvm::Module *module, ModRefAnalysis *mra) :
         module(module), mra(mra)
     {
-        sliceId = 1;
-        argId = 1;
+        argId = 0;
     }
 
     void annotate();
 
-    void annotateStores(std::set<llvm::Instruction *> &stores);
+    void annotateReturns(llvm::Function *f, uint32_t sliceId);
 
-    void annotateStore(llvm::Instruction *inst);
+    void annotateReturn(llvm::Instruction *inst, uint32_t sliceId);
+
+    void annotateStores(std::set<llvm::Instruction *> &stores, uint32_t sliceId);
+
+    void annotateStore(llvm::Instruction *inst, uint32_t sliceId);
 
     static std::string getAnnotatedName(uint32_t id);
 
@@ -30,7 +35,6 @@ private:
 
     llvm::Module *module;
     ModRefAnalysis *mra;
-    uint32_t sliceId;
     uint32_t argId;
 };
 

@@ -18,11 +18,10 @@ using namespace llvm;
 void Cloner::clone(std::string name) {
     Function *entry = module->getFunction(StringRef(name));
 
-    ModRefAnalysis::AllocSiteToIdMap &allocSiteToIdMap = mra->allocSiteToIdMap;
-    errs() << "creating " << allocSiteToIdMap.size() << " slices\n";
+    errs() << "creating " << mra->sliceIds.size() << " slices\n";
 
-    for (ModRefAnalysis::AllocSiteToIdMap::iterator i = allocSiteToIdMap.begin(); i != allocSiteToIdMap.end(); i++) {
-        uint32_t sliceId = i->second;
+    for (ModRefAnalysis::SliceIds::iterator i = mra->sliceIds.begin(); i != mra->sliceIds.end(); i++) {
+        uint32_t sliceId = *i;
 
         /* TODO: check the last parameter! */
         ValueToValueMapTy *vmap = new ValueToValueMapTy();

@@ -24,10 +24,10 @@ using namespace llvm;
 void ModRefAnalysis::run() {
     Function *entryFunction = module->getFunction(entry);
     assert(entryFunction);
-    Function *targetFUnction = module->getFunction(target);
-    assert(targetFUnction);
+    Function *targetFunction = module->getFunction(target);
+    assert(targetFunction);
 
-    computeMod(entryFunction, targetFUnction);
+    computeMod(entryFunction, targetFunction);
 
     dumpMod();
     dumpLoadToStoreMap();
@@ -245,9 +245,23 @@ void ModRefAnalysis::computeAllocSiteToStoreMap() {
 
 void ModRefAnalysis::computeAllocSiteToIdMap() {
     uint32_t id = 1;
-    for (AllocSiteToStoreMap::iterator i = allocSiteToStoreMap.begin(); i != allocSiteToStoreMap.end(); i++) {
-        allocSiteToIdMap[i->first] = id++;
+
+    /* TODO: better solution? */
+    retSliceId = id++;
+    if (hasReturnValue()) {
+        sliceIds.push_back(retSliceId);
     }
+
+    for (AllocSiteToStoreMap::iterator i = allocSiteToStoreMap.begin(); i != allocSiteToStoreMap.end(); i++) {
+        allocSiteToIdMap[i->first] = id;
+        sliceIds.push_back(id);
+        id++;
+    }
+}
+
+bool ModRefAnalysis::hasReturnValue() {
+    Function *targetFunction = module->getFunction(target);
+    return !targetFunction->getReturnType()->isVoidTy();
 }
 
 AliasAnalysis::Location ModRefAnalysis::getLoadLocation(LoadInst *inst) {

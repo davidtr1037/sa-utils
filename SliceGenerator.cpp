@@ -12,10 +12,8 @@
 using namespace llvm;
 
 void SliceGenerator::generate() {
-    unsigned int nslices = mra->allocSiteToStoreMap.size();
-    for (unsigned int i = 0; i < nslices; i++) {
-        /* TODO: ... */
-        uint32_t sliceId = i + 1;
+    for (ModRefAnalysis::SliceIds::iterator i = mra->sliceIds.begin(); i != mra->sliceIds.end(); i++) {
+        uint32_t sliceId = *i;
 
         /* set criterion function */
         std::vector<std::string> criterions;
@@ -39,8 +37,8 @@ void SliceGenerator::dumpSlice(uint32_t sliceId) {
 }
 
 void SliceGenerator::dumpSlices() {
-    unsigned int nslices = mra->allocSiteToStoreMap.size();
-    for (unsigned int i = 0; i < nslices; i++) {
-        dumpSlice(i + 1);
+    for (ModRefAnalysis::SliceIds::iterator i = mra->sliceIds.begin(); i != mra->sliceIds.end(); i++) {
+        uint32_t sliceId = *i;
+        dumpSlice(sliceId);
     }
 }

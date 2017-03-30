@@ -20,6 +20,7 @@ public:
     typedef std::map<llvm::Instruction *, std::set<llvm::Instruction *> > LoadToStoreMap;
     typedef std::map<std::pair<const llvm::Value *, uint64_t>, std::set<llvm::Instruction *> > AllocSiteToStoreMap;
     typedef std::map<std::pair<const llvm::Value *, uint64_t>, uint32_t> AllocSiteToIdMap;
+    typedef std::vector<uint32_t> SliceIds;
 
     ModRefAnalysis(llvm::Module *module, ReachabilityAnalysis *ra, AAPass *aa, std::string entry, std::string target) :
         module(module), ra(ra), aa(aa), entry(entry), target(target)
@@ -47,6 +48,8 @@ public:
 
     void computeAllocSiteToIdMap();
 
+    bool hasReturnValue();
+
     llvm::AliasAnalysis::Location getLoadLocation(llvm::LoadInst *inst);
 
     llvm::AliasAnalysis::Location getStoreLocation(llvm::StoreInst *inst);
@@ -61,10 +64,11 @@ private:
     llvm::Module *module;
     ReachabilityAnalysis *ra;
     AAPass *aa;
+
+public:
     std::string entry;
     std::string target;
 
-public:
     PointsTo modPts;
     ObjToStoreMap objToStoreMap;
     PointsTo refPts;
@@ -73,7 +77,10 @@ public:
     LoadToStoreMap loadToStoreMap;
     std::set<llvm::Instruction *> sideEffects;
     AllocSiteToStoreMap allocSiteToStoreMap;
+
     AllocSiteToIdMap allocSiteToIdMap;
+    uint32_t retSliceId;
+    SliceIds sliceIds;
 };
 
 #endif

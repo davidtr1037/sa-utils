@@ -413,8 +413,10 @@ bool Slicer::mark()
     // don't go through the graph when we know the result:
     // only empty main will stay there. Just delete the body
     // of main and keep the return value
-    if (!got_slicing_criterion)
-        return createEmptyMain(M);
+    if (!got_slicing_criterion) {
+        /* TODO: decide what to do... */
+        return 0; //createEmptyMain(M);
+    }
 
     // we also do not want to remove any assumptions
     // about the code
