@@ -32,7 +32,11 @@ void Cloner::clone(std::string name) {
         cloned->setName(StringRef(clonedName));
 
         /* update map */
-        functionMap[entry][sliceId] = std::make_pair(cloned, vmap);
+        SliceInfo sliceInfo = std::make_pair(cloned, vmap);
+        functionMap[entry][sliceId] = sliceInfo;
+
+        /* update map */
+        cloneInfoMap[cloned] = buildReversedMap(vmap);
     }
 
     //for (inst_iterator i = inst_begin(entry); i != inst_end(entry); i++) {
@@ -62,6 +66,19 @@ void Cloner::clone(std::string name) {
     //}
 }
 
+Cloner::ValueTranslationMap *Cloner::buildReversedMap(ValueToValueMapTy *vmap) {
+    ValueTranslationMap *map = new ValueTranslationMap();
+    for (ValueToValueMapTy::iterator i = vmap->begin(); i != vmap->end(); i++) {
+        /* TODO: should be const Value... */
+        Value *value = (Value *)(i->first);
+        WeakVH &wvh = i->second;
+        Value *mappedValue  = &*wvh;
+        map->insert(std::make_pair(mappedValue, value));
+    }
+
+    return map;
+}
+
 Cloner::SliceMap *Cloner::getSlices(llvm::Function *function) {
     FunctionMap::iterator entry = functionMap.find(function);
     if (entry == functionMap.end()) {
@@ -83,6 +100,15 @@ Cloner::SliceInfo *Cloner::getSlice(llvm::Function *function, uint32_t sliceId) 
     }
 
     return &(entry->second);
+}
+
+Cloner::ValueTranslationMap *Cloner::getCloneInfo(llvm::Function *cloned) {
+    CloneInfoMap::iterator i = cloneInfoMap.find(cloned);
+    if (i == cloneInfoMap.end()) {
+        return 0;
+    }
+
+    return i->second;
 }
 
 Cloner::~Cloner() {

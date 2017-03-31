@@ -12,9 +12,11 @@
 
 class Cloner {
 public:
+    typedef std::map<llvm::Value *, llvm::Value *> ValueTranslationMap;
     typedef std::pair<llvm::Function *, llvm::ValueToValueMapTy *> SliceInfo;
     typedef std::map<uint32_t, SliceInfo> SliceMap;
     typedef std::map<llvm::Function *, SliceMap> FunctionMap;
+    typedef std::map<llvm::Function *, ValueTranslationMap *> CloneInfoMap;
 
     Cloner(llvm::Module *module, ModRefAnalysis *mra) :
         module(module), mra(mra)
@@ -26,11 +28,17 @@ public:
 
     void clone(std::string name);
 
+    ValueTranslationMap *buildReversedMap(llvm::ValueToValueMapTy *vmap);
+
     SliceMap *getSlices(llvm::Function *function);
 
     SliceInfo *getSlice(llvm::Function *function, uint32_t sliceId);
+
+    ValueTranslationMap *getCloneInfo(llvm::Function *cloned);
     
     FunctionMap functionMap;
+
+    CloneInfoMap cloneInfoMap;
 
 private:
 
