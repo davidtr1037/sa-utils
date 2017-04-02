@@ -34,10 +34,17 @@ void SliceGenerator::generate() {
 }
 
 void SliceGenerator::dumpSlice(uint32_t sliceId) {
-    Cloner::SliceInfo *si = cloner->getSlice(module->getFunction(StringRef("f")), sliceId);
-    Function *sliced = si->first;   
     errs() << "slice: " << sliceId << "\n";
-    sliced->dump();
+    for (std::set<Function *>::iterator i = cloner->reachable.begin(); i != cloner->reachable.end(); i++) {
+        Function *f = *i;
+        if (f->isDeclaration()) {
+            continue;
+        }
+
+        Cloner::SliceInfo *si = cloner->getSlice(f, sliceId);
+        Function *sliced = si->first;
+        sliced->dump();
+    }
 }
 
 void SliceGenerator::dumpSlices() {

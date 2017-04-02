@@ -17,19 +17,17 @@
 using namespace std;
 using namespace llvm;
 
-void ReachabilityAnalysis::analyze() {
-    computeReachableFunctions();
+void ReachabilityAnalysis::run() {
+    /* collect function type map for indirect calls */
+    computeFunctionTypeMap();
+    //computeReachableFunctions(getEntryPoint(), reachable);
     //removeUnreachableFunctions();
 }
 
-void ReachabilityAnalysis::computeReachableFunctions() {
+void ReachabilityAnalysis::computeReachableFunctions(Function *entry, std::set<Function *> &results) {
     std::stack<Function *> stack;
     std::set<Function *> pushed;
 
-    /* collect function type map for indirect calls */
-    computeFunctionTypeMap();
-
-    Function *entry = getEntryPoint();
     if (!entry) {
         return;
     }
@@ -38,7 +36,7 @@ void ReachabilityAnalysis::computeReachableFunctions() {
 
     stack.push(entry);
     pushed.insert(entry);
-    reachable.insert(entry);
+    results.insert(entry);
 
     while (!stack.empty()) {
         Function *f = stack.top();
@@ -59,7 +57,7 @@ void ReachabilityAnalysis::computeReachableFunctions() {
 
             for (std::set<Function *>::iterator i = targets.begin(); i != targets.end(); i++) {
                 Function *target = *i;
-                reachable.insert(target);
+                results.insert(target);
 
                 if (target->isDeclaration()) {
                     continue;

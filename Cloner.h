@@ -8,6 +8,7 @@
 #include <llvm/IR/Function.h>
 #include <llvm/Transforms/Utils/ValueMapper.h>
 
+#include "ReachabilityAnalysis.h"
 #include "ModRefAnalysis.h"
 
 class Cloner {
@@ -18,8 +19,8 @@ public:
     typedef std::map<llvm::Function *, SliceMap> FunctionMap;
     typedef std::map<llvm::Function *, ValueTranslationMap *> CloneInfoMap;
 
-    Cloner(llvm::Module *module, ModRefAnalysis *mra) :
-        module(module), mra(mra)
+    Cloner(llvm::Module *module, ReachabilityAnalysis *ra, ModRefAnalysis *mra) :
+        module(module), ra(ra), mra(mra)
     {
 
     }
@@ -27,6 +28,8 @@ public:
     ~Cloner();
 
     void clone(std::string name);
+
+    void cloneFunction(llvm::Function *f, uint32_t sliceId);
 
     ValueTranslationMap *buildReversedMap(llvm::ValueToValueMapTy *vmap);
 
@@ -38,6 +41,8 @@ public:
     
     llvm::Value *translateValue(llvm::Value *);
 
+    std::set<llvm::Function *> reachable;
+
     FunctionMap functionMap;
 
     CloneInfoMap cloneInfoMap;
@@ -45,6 +50,7 @@ public:
 private:
 
     llvm::Module *module;
+    ReachabilityAnalysis *ra;
     ModRefAnalysis *mra;
 };
 

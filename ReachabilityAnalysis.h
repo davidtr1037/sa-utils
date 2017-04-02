@@ -2,7 +2,7 @@
 #define REACHABILITYANALYSIS_H
 
 #include <stdio.h>
-#include <iostream>
+#include <set>
 
 #include <llvm/IR/Module.h>
 #include <llvm/IR/Function.h>
@@ -17,14 +17,15 @@ public:
 
     ~ReachabilityAnalysis();
 
-    void analyze();
+    void run();
+
+    void computeReachableFunctions(llvm::Function *entry, std::set<llvm::Function *> &results);
 
     void getCallTargets(llvm::CallInst *call_inst, std::set<llvm::Function *> &targets);
 
 private:
-    void computeFunctionTypeMap();
 
-    void computeReachableFunctions();
+    void computeFunctionTypeMap();
 
     bool isVirtual(llvm::Function *f);
 

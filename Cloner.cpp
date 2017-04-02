@@ -10,6 +10,7 @@
 #include <llvm/Transforms/Utils/Cloning.h>
 #include <llvm/Transforms/Utils/ValueMapper.h>
 
+#include "ReachabilityAnalysis.h"
 #include "ModRefAnalysis.h"
 #include "Cloner.h"
 
@@ -18,25 +19,21 @@ using namespace llvm;
 void Cloner::clone(std::string name) {
     Function *entry = module->getFunction(StringRef(name));
 
+    ra->computeReachableFunctions(entry, reachable);
+
+    errs() << reachable.size() << " reachable functions\n";
     errs() << "creating " << mra->sliceIds.size() << " slices\n";
 
     for (ModRefAnalysis::SliceIds::iterator i = mra->sliceIds.begin(); i != mra->sliceIds.end(); i++) {
         uint32_t sliceId = *i;
-
-        /* TODO: check the last parameter! */
-        ValueToValueMapTy *vmap = new ValueToValueMapTy();
-        Function *cloned = CloneFunction(entry, *vmap, true);
-
-        /* set function name */
-        std::string clonedName = name + std::string("_clone_") + std::to_string(sliceId);
-        cloned->setName(StringRef(clonedName));
-
-        /* update map */
-        SliceInfo sliceInfo = std::make_pair(cloned, vmap);
-        functionMap[entry][sliceId] = sliceInfo;
-
-        /* update map */
-        cloneInfoMap[cloned] = buildReversedMap(vmap);
+        for (std::set<Function *>::iterator j = reachable.begin(); j != reachable.end(); j++) {
+            Function *f = *j;
+            if (f->isDeclaration()) {
+                continue;
+            }
+            errs() << "cloning: " << f->getName() << "\n";
+            cloneFunction(f, sliceId);
+        }
     }
 
     //for (inst_iterator i = inst_begin(entry); i != inst_end(entry); i++) {
@@ -64,6 +61,23 @@ void Cloner::clone(std::string name) {
     //        errs() << "new call: " << ncalled << "\n";
     //    }
     //}
+}
+
+void Cloner::cloneFunction(Function *f, uint32_t sliceId) {
+    /* TODO: check the last parameter! */
+    ValueToValueMapTy *vmap = new ValueToValueMapTy();
+    Function *cloned = CloneFunction(f, *vmap, true);
+
+    /* set function name */
+    std::string clonedName = std::string(f->getName().data()) + std::string("_clone_") + std::to_string(sliceId);
+    cloned->setName(StringRef(clonedName));
+
+    /* update map */
+    SliceInfo sliceInfo = std::make_pair(cloned, vmap);
+    functionMap[f][sliceId] = sliceInfo;
+
+    /* update map */
+    cloneInfoMap[cloned] = buildReversedMap(vmap);
 }
 
 Cloner::ValueTranslationMap *Cloner::buildReversedMap(ValueToValueMapTy *vmap) {

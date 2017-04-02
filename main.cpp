@@ -41,7 +41,7 @@ int main(int argc, char *argv[]) {
     }
 
     ReachabilityAnalysis *ra = new ReachabilityAnalysis(module);
-    ra->analyze(); 
+    ra->run(); 
 
     AAPass *aa = new AAPass();
     aa->setPAType(PointerAnalysis::AndersenWaveDiff_WPA);
@@ -56,7 +56,7 @@ int main(int argc, char *argv[]) {
     Annotator *annotator = new Annotator(module, mra);
     annotator->annotate();
 
-    Cloner *cloner = new Cloner(module, mra);
+    Cloner *cloner = new Cloner(module, ra, mra);
     cloner->clone("f");
 
     SliceGenerator *sg = new SliceGenerator(module, aa, mra, cloner, "f");
