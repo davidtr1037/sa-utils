@@ -36,6 +36,8 @@ public:
 
     ValueTranslationMap *getCloneInfo(llvm::Function *cloned);
     
+    llvm::Value *translateValue(llvm::Value *);
+
     FunctionMap functionMap;
 
     CloneInfoMap cloneInfoMap;

@@ -111,6 +111,28 @@ Cloner::ValueTranslationMap *Cloner::getCloneInfo(llvm::Function *cloned) {
     return i->second;
 }
 
+Value *Cloner::translateValue(Value *value) {
+    Instruction *inst = dyn_cast<Instruction>(value);
+    if (!inst) {
+        /* TODO: do we clone only instructions? */
+        return value;
+    }
+
+    Function *f = inst->getParent()->getParent();
+    CloneInfoMap::iterator entry = cloneInfoMap.find(f);
+    if (entry == cloneInfoMap.end()) {
+        /* the value is not contained in a cloned function */
+        return value;
+    }
+
+    ValueTranslationMap *map = entry->second;
+    ValueTranslationMap::iterator i = map->find(value);
+    if (i == map->end()) {
+        assert(false);
+    }
+    return i->second;
+}
+
 Cloner::~Cloner() {
     for (FunctionMap::iterator i = functionMap.begin(); i != functionMap.end(); i++) {
         SliceMap &sliceMap = i->second;

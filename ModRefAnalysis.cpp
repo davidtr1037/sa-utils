@@ -314,6 +314,18 @@ void ModRefAnalysis::dumpAllocSiteToStoreMap() {
     }
 }
 
+void ModRefAnalysis::dumpAllocSiteToIdMap() {
+    errs() << "AllocSiteToIdMap:\n";
+    for (AllocSiteToIdMap::iterator i = allocSiteToIdMap.begin(); i != allocSiteToIdMap.end(); i++) {
+        std::pair<const Value *, uint64_t> key = i->first;
+        const Value *allocSite = key.first;
+        uint64_t offset = key.second;
+        errs() << "AS: "; allocSite->print(errs()); errs() << "\n";
+        errs() << "OFFSET: " << offset << "\n";
+        errs() << "ID: " << i->second << "\n";
+    }
+}
+
 /* Temporary */
 
 Instruction *get_inst(Function *f, unsigned int k) {

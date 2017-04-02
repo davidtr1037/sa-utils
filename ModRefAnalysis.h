@@ -60,6 +60,8 @@ public:
 
     void dumpAllocSiteToStoreMap();
 
+    void dumpAllocSiteToIdMap();
+
 private:
     llvm::Module *module;
     ReachabilityAnalysis *ra;
