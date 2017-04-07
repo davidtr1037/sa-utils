@@ -13,6 +13,7 @@
 
 class Cloner {
 public:
+
     typedef std::map<llvm::Value *, llvm::Value *> ValueTranslationMap;
     typedef std::pair<llvm::Function *, llvm::ValueToValueMapTy *> SliceInfo;
     typedef std::map<uint32_t, SliceInfo> SliceMap;
@@ -20,18 +21,17 @@ public:
     typedef std::map<llvm::Function *, ValueTranslationMap *> CloneInfoMap;
 
     Cloner(llvm::Module *module, ReachabilityAnalysis *ra, ModRefAnalysis *mra) :
-        module(module), ra(ra), mra(mra)
+        module(module), 
+        ra(ra), 
+        mra(mra),
+        entryName(mra->target)
     {
 
     }
 
     ~Cloner();
 
-    void clone(std::string name);
-
-    void cloneFunction(llvm::Function *f, uint32_t sliceId);
-
-    ValueTranslationMap *buildReversedMap(llvm::ValueToValueMapTy *vmap);
+    void run();
 
     SliceMap *getSlices(llvm::Function *function);
 
@@ -41,17 +41,20 @@ public:
     
     llvm::Value *translateValue(llvm::Value *);
 
-    std::set<llvm::Function *> reachable;
-
-    FunctionMap functionMap;
-
-    CloneInfoMap cloneInfoMap;
-
-private:
-
     llvm::Module *module;
     ReachabilityAnalysis *ra;
     ModRefAnalysis *mra;
+    std::string entryName;
+    std::set<llvm::Function *> reachable;
+
+private:
+
+    void cloneFunction(llvm::Function *f, uint32_t sliceId);
+
+    ValueTranslationMap *buildReversedMap(llvm::ValueToValueMapTy *vmap);
+
+    FunctionMap functionMap;
+    CloneInfoMap cloneInfoMap;
 };
 
 #endif

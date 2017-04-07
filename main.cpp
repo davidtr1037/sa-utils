@@ -30,6 +30,11 @@ using namespace std;
 using namespace llvm;
 
 int main(int argc, char *argv[]) {
+    if (argc != 3) {
+        fprintf(stderr, "Usage: <bitcode-file> <sliced-function-name>\n");
+        return 1;
+    }
+
     string inputFile(argv[1]);
     Module *module;
     SMDiagnostic err;
@@ -37,6 +42,12 @@ int main(int argc, char *argv[]) {
     LLVMContext &context = getGlobalContext();
     module = ParseIRFile(inputFile, err, context);
     if (!module) {
+        return 1;
+    }
+
+    std::string slicedFunction = std::string(argv[2]);
+    if (!module->getFunction(slicedFunction)) {
+        fprintf(stderr, "Sliced function not found...\n");
         return 1;
     }
 
@@ -50,16 +61,16 @@ int main(int argc, char *argv[]) {
     pm.add(aa);
     pm.run(*module);
 
-    ModRefAnalysis *mra = new ModRefAnalysis(module, ra, aa, "main", "f");
+    ModRefAnalysis *mra = new ModRefAnalysis(module, ra, aa, "main", slicedFunction);
     mra->run();
 
     Annotator *annotator = new Annotator(module, mra);
     annotator->annotate();
 
     Cloner *cloner = new Cloner(module, ra, mra);
-    cloner->clone("f");
+    cloner->run();
 
-    SliceGenerator *sg = new SliceGenerator(module, aa, mra, cloner, "f");
+    SliceGenerator *sg = new SliceGenerator(module, aa, mra, cloner);
     sg->generate();
     sg->dumpSlices();
 

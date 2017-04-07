@@ -16,14 +16,13 @@
 
 using namespace llvm;
 
-void Cloner::clone(std::string name) {
-    Function *entry = module->getFunction(StringRef(name));
+void Cloner::run() {
+    Function *entryFunction = module->getFunction(entryName);
 
-    ra->computeReachableFunctions(entry, reachable);
-
+    ra->computeReachableFunctions(entryFunction, reachable);
     errs() << reachable.size() << " reachable functions\n";
-    errs() << "creating " << mra->sliceIds.size() << " slices\n";
 
+    errs() << "creating " << mra->sliceIds.size() << " slices\n";
     for (ModRefAnalysis::SliceIds::iterator i = mra->sliceIds.begin(); i != mra->sliceIds.end(); i++) {
         uint32_t sliceId = *i;
         for (std::set<Function *>::iterator j = reachable.begin(); j != reachable.end(); j++) {
@@ -35,32 +34,6 @@ void Cloner::clone(std::string name) {
             cloneFunction(f, sliceId);
         }
     }
-
-    //for (inst_iterator i = inst_begin(entry); i != inst_end(entry); i++) {
-    //    Instruction *inst = &*i;
-    //    Value *v = dyn_cast<Value>(inst);
-    //    WeakVH &wvh = vmap[v];
-    //    Value *nv = &*wvh;
-    //    errs() << "old: " << v << " new: " << nv << "\n";
-    //    v->dump();
-    //    nv->dump();
-    //    if (inst->getOpcode() == Instruction::Load) {
-    //        LoadInst *load = dyn_cast<LoadInst>(v);
-    //        LoadInst *nload = dyn_cast<LoadInst>(nv);
-    //        Value *ptr = load->getPointerOperand();
-    //        Value *nptr = nload->getPointerOperand();
-    //        errs() << "old ptr: " << ptr << "\n"; ptr->dump(); 
-    //        errs() << "new ptr: " << nptr << "\n"; nptr->dump(); 
-    //    }
-    //    if (inst->getOpcode() == Instruction::Call) {
-    //        CallInst *call = dyn_cast<CallInst>(v);
-    //        CallInst *ncall = dyn_cast<CallInst>(nv);
-    //        Value *called = call->getCalledValue();
-    //        Value *ncalled = ncall->getCalledValue();
-    //        errs() << "old call: " << called << "\n";
-    //        errs() << "new call: " << ncalled << "\n";
-    //    }
-    //}
 }
 
 void Cloner::cloneFunction(Function *f, uint32_t sliceId) {
@@ -94,12 +67,12 @@ Cloner::ValueTranslationMap *Cloner::buildReversedMap(ValueToValueMapTy *vmap) {
 }
 
 Cloner::SliceMap *Cloner::getSlices(llvm::Function *function) {
-    FunctionMap::iterator entry = functionMap.find(function);
-    if (entry == functionMap.end()) {
+    FunctionMap::iterator i = functionMap.find(function);
+    if (i == functionMap.end()) {
         return 0;
     }
 
-    return &(entry->second);
+    return &(i->second);
 }
 
 Cloner::SliceInfo *Cloner::getSlice(llvm::Function *function, uint32_t sliceId) {
@@ -108,12 +81,12 @@ Cloner::SliceInfo *Cloner::getSlice(llvm::Function *function, uint32_t sliceId) 
         return 0;
     }
 
-    SliceMap::iterator entry = sliceMap->find(sliceId);
-    if (entry == sliceMap->end()) {
+    SliceMap::iterator i = sliceMap->find(sliceId);
+    if (i == sliceMap->end()) {
         return 0;
     }
 
-    return &(entry->second);
+    return &(i->second);
 }
 
 Cloner::ValueTranslationMap *Cloner::getCloneInfo(llvm::Function *cloned) {

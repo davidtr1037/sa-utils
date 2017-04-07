@@ -13,8 +13,11 @@
 class SliceGenerator {
 public:
 
-    SliceGenerator(llvm::Module *module, AAPass *aa, ModRefAnalysis *mra, Cloner *cloner, std::string target) :
-        module(module), aa(aa), mra(mra), cloner(cloner), target(target)
+    SliceGenerator(llvm::Module *module, AAPass *aa, ModRefAnalysis *mra, Cloner *cloner) :
+        module(module), 
+        aa(aa), 
+        mra(mra), 
+        cloner(cloner)
     {
 
     }
@@ -25,13 +28,10 @@ public:
 
     void dumpSlices();
 
-private:
-
     llvm::Module *module;
     AAPass *aa;
     ModRefAnalysis *mra;
     Cloner *cloner;
-    std::string target;
 };
 
 #endif

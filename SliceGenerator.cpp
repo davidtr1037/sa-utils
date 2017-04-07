@@ -24,7 +24,7 @@ void SliceGenerator::generate() {
         }
 
         /* generate slice */
-        Slicer *slicer = new Slicer(module, 0, aa, cloner, target, criterions);
+        Slicer *slicer = new Slicer(module, 0, aa, cloner, cloner->entryName, criterions);
         slicer->setSliceId(sliceId);
         slicer->run();
 
