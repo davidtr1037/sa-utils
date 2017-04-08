@@ -15,11 +15,13 @@
 
 class ModRefAnalysis {
 public:
+    typedef std::pair<const llvm::Value *, uint64_t> AllocSite;
     typedef std::map<NodeID, std::set<llvm::Instruction *> > ObjToStoreMap;
     typedef std::map<NodeID, std::set<llvm::Instruction *> > ObjToLoadMap;
     typedef std::map<llvm::Instruction *, std::set<llvm::Instruction *> > LoadToStoreMap;
-    typedef std::map<std::pair<const llvm::Value *, uint64_t>, std::set<llvm::Instruction *> > AllocSiteToStoreMap;
-    typedef std::map<std::pair<const llvm::Value *, uint64_t>, uint32_t> AllocSiteToIdMap;
+    typedef std::map<llvm::Instruction *, std::set<AllocSite> > LoadToAllocSiteMap;
+    typedef std::map<AllocSite, std::set<llvm::Instruction *> > AllocSiteToStoreMap;
+    typedef std::map<AllocSite, uint32_t> AllocSiteToIdMap;
     typedef std::vector<uint32_t> SliceIds;
 
     ModRefAnalysis(llvm::Module *module, ReachabilityAnalysis *ra, AAPass *aa, std::string entry, std::string target) :
@@ -48,11 +50,7 @@ public:
 
     void computeAllocSiteToIdMap();
 
-    bool hasReturnValue();
-
-    llvm::AliasAnalysis::Location getLoadLocation(llvm::LoadInst *inst);
-
-    llvm::AliasAnalysis::Location getStoreLocation(llvm::StoreInst *inst);
+    AllocSite getApproximateAllocSite(llvm::Instruction *inst, AllocSite hint);
 
     void dumpMod();
 
@@ -63,6 +61,14 @@ public:
     void dumpAllocSiteToIdMap();
 
 private:
+    AllocSite getAllocSite(NodeID);
+
+    bool hasReturnValue();
+
+    llvm::AliasAnalysis::Location getLoadLocation(llvm::LoadInst *inst);
+
+    llvm::AliasAnalysis::Location getStoreLocation(llvm::StoreInst *inst);
+
     llvm::Module *module;
     ReachabilityAnalysis *ra;
     AAPass *aa;
@@ -77,6 +83,7 @@ public:
     ObjToLoadMap objToLoadMap;
     /* TODO: check if required... */
     LoadToStoreMap loadToStoreMap;
+    LoadToAllocSiteMap loadToAllocSiteMap;
     std::set<llvm::Instruction *> sideEffects;
     AllocSiteToStoreMap allocSiteToStoreMap;
 

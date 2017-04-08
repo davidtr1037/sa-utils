@@ -207,7 +207,13 @@ void ModRefAnalysis::getModRefInfo() {
         set<Instruction *> load_insts = objToLoadMap[node_id];
         for (set<Instruction *>::iterator i = load_insts.begin(); i != load_insts.end(); i++) {
             Instruction *load_inst = *i;
+
+            /* update with store instructions */
             loadToStoreMap[load_inst].insert(stores.begin(), stores.end());
+
+            /* update with allocation site */
+            AllocSite allocSite = getAllocSite(node_id);
+            loadToAllocSiteMap[load_inst].insert(allocSite);
         }
     }
 
@@ -224,23 +230,30 @@ void ModRefAnalysis::computeAllocSiteToStoreMap() {
 
         for (PointsTo::iterator ni = pts.begin(); ni != pts.end(); ++ni) {
             NodeID nodeId = *ni;
-            PAGNode *pagNode = aa->getPTA()->getPAG()->getPAGNode(nodeId);
-            ObjPN *obj = dyn_cast<ObjPN>(pagNode);
-            assert(obj);
 
-            /* get allocation site value */
-            const MemObj *mo = obj->getMemObj();    
-            const Value *allocSite = mo->getRefVal();
-            /* get offset in bytes */
-            uint64_t offset = 0;
-            if (obj->getNodeKind() == PAGNode::GepObjNode) {
-                GepObjPN *gepObj = dyn_cast<GepObjPN>(obj);
-                offset = gepObj->getLocationSet().getAccOffset(); 
-            }
             /* update store instructions */
-            allocSiteToStoreMap[std::make_pair(allocSite, offset)].insert(inst);  
+            AllocSite allocSite = getAllocSite(nodeId);
+            allocSiteToStoreMap[allocSite].insert(inst);  
         }
     }
+}
+
+ModRefAnalysis::AllocSite ModRefAnalysis::getAllocSite(NodeID nodeId) {
+    PAGNode *pagNode = aa->getPTA()->getPAG()->getPAGNode(nodeId);
+    ObjPN *obj = dyn_cast<ObjPN>(pagNode);
+    assert(obj);
+
+    /* get allocation site value */
+    const MemObj *mo = obj->getMemObj();
+    const Value *allocSite = mo->getRefVal();
+    /* get offset in bytes */
+    uint64_t offset = 0;
+    if (obj->getNodeKind() == PAGNode::GepObjNode) {
+        GepObjPN *gepObj = dyn_cast<GepObjPN>(obj);
+        offset = gepObj->getLocationSet().getAccOffset(); 
+    }
+
+    return std::make_pair(allocSite, offset);
 }
 
 void ModRefAnalysis::computeAllocSiteToIdMap() {
@@ -272,6 +285,33 @@ AliasAnalysis::Location ModRefAnalysis::getLoadLocation(LoadInst *inst) {
 AliasAnalysis::Location ModRefAnalysis::getStoreLocation(StoreInst *inst) {
     Value *addr = inst->getPointerOperand();
     return AliasAnalysis::Location(addr);
+}
+
+ModRefAnalysis::AllocSite ModRefAnalysis::getApproximateAllocSite(Instruction *inst, AllocSite hint) {
+    assert(inst->getOpcode() == Instruction::Load);
+
+    LoadToAllocSiteMap::iterator entry = loadToAllocSiteMap.find(inst);
+    if (entry == loadToAllocSiteMap.end()) {
+        /* this should not happen */
+        assert(false);
+    }
+
+    std::set<AllocSite> &allocSites = entry->second;
+    std::set<AllocSite> approximateAllocSites;
+    for (std::set<AllocSite>::iterator i = allocSites.begin(); i != allocSites.end(); i++) {
+        AllocSite allocSite = *i;
+        if (allocSite == hint) {
+            return allocSite;
+        }
+
+        if (allocSite.first == hint.first) {
+            approximateAllocSites.insert(allocSite);
+        }
+    }
+
+    /* TODO: this assumption does not hold if we have a buffer in a struct */
+    assert(approximateAllocSites.size() == 1);
+    return *approximateAllocSites.begin();
 }
 
 void ModRefAnalysis::dumpMod() {
