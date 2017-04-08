@@ -24,7 +24,7 @@ public:
 
     void generate();
 
-    void dumpSlice(uint32_t sliceId);
+    void dumpSlices(llvm::Function *f);
 
     void dumpSlices();
 

@@ -33,14 +33,10 @@ void SliceGenerator::generate() {
     }
 }
 
-void SliceGenerator::dumpSlice(uint32_t sliceId) {
-    errs() << "slice: " << sliceId << "\n";
-    for (std::set<Function *>::iterator i = cloner->reachable.begin(); i != cloner->reachable.end(); i++) {
-        Function *f = *i;
-        if (f->isDeclaration()) {
-            continue;
-        }
-
+void SliceGenerator::dumpSlices(Function *f) {
+    f->dump();
+    for (ModRefAnalysis::SliceIds::iterator i = mra->sliceIds.begin(); i != mra->sliceIds.end(); i++) {
+        uint32_t sliceId = *i;
         Cloner::SliceInfo *si = cloner->getSlice(f, sliceId);
         Function *sliced = si->first;
         sliced->dump();
@@ -48,8 +44,12 @@ void SliceGenerator::dumpSlice(uint32_t sliceId) {
 }
 
 void SliceGenerator::dumpSlices() {
-    for (ModRefAnalysis::SliceIds::iterator i = mra->sliceIds.begin(); i != mra->sliceIds.end(); i++) {
-        uint32_t sliceId = *i;
-        dumpSlice(sliceId);
+    for (std::set<Function *>::iterator i = cloner->reachable.begin(); i != cloner->reachable.end(); i++) {
+        Function *f = *i;
+        if (f->isDeclaration()) {
+            continue;
+        }
+
+        dumpSlices(f);
     }
 }

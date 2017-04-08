@@ -94,6 +94,14 @@ bool ReachabilityAnalysis::isVirtual(Function *f) {
             /* we found a use which is not a call instruction */
             return true;
         }
+
+        for (unsigned int i = 0; i < call_inst->getNumArgOperands(); i++) {
+            Function *arg = dyn_cast<Function>(call_inst->getArgOperand(i));
+            if (arg && arg == f) {
+                /* the function is passed as an argument */
+                return true;
+            }
+        }
     }
 
     return false;
