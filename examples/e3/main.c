@@ -31,6 +31,8 @@ void target(char *buf, size_t size, int *lines) {
     unsigned int h = crc32(0, buf, size);
     if (h == 17) {
         printf("OK...\n");
+    } else {
+        printf("ERROR...\n");
     }
 }
 
@@ -41,9 +43,9 @@ int main(int argc, char *argv[]) {
     klee_make_symbolic(&buf, sizeof(buf), "buf");
 
     target(buf, sizeof(buf), &lines);
-    if (lines == 1) {
-        BUG();
-    }
+    //if (lines == 1) {
+    //    BUG();
+    //}
 
     return 0;
 }

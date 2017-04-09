@@ -6,6 +6,8 @@ LLVM_LINK=$(LLVM_OBJ)/Release+Asserts/bin/llvm-link
 KLEE_PATH=/home/david/tau/klee/klee
 
 SOURCES=\
+    crc32.c \
+    dict.c \
     main.c
 
 TARGET=final.bc

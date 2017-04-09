@@ -329,10 +329,14 @@ void ModRefAnalysis::dumpLoadToStoreMap() {
     for (LoadToStoreMap::iterator i = loadToStoreMap.begin(); i != loadToStoreMap.end(); i++) {
         Instruction *load = i->first;
         set<Instruction *> stores = i->second;
-        outs() << "LOAD: "; load->print(outs()); outs() << "\n";
+
+        outs() << "LOAD: " << "[" << load->getParent()->getParent()->getName() << "]";
+        load->print(outs()); outs() << "\n";
+
         for (set<Instruction *>::iterator j = stores.begin(); j != stores.end(); j++) {
             Instruction *store_inst = *j;
-            outs() << "-- STORE: "; store_inst->print(outs()); outs() << "\n";
+            outs() << "-- STORE: " << "[" << store_inst->getParent()->getParent()->getName() << "]";
+            store_inst->print(outs()); outs() << "\n";
         }
     }
 }

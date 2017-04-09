@@ -22,6 +22,7 @@ void dict_lookup(dict_t *dict, char *name, size_t len) {
     dict_entry_t *current = dict->table[h];
     while (current) {
         if (strcmp(name, current->name) == 0) {
+            /* found... */
             return;
         }
         current = current->next;
