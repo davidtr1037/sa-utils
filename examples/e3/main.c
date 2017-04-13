@@ -15,12 +15,12 @@
 }
 
 void hash(void *data, size_t size, unsigned char digest[16]) {
-	md5_state_t state;
+    md5_state_t state;
 
     /* compute hash... */
-	md5_init(&state);
-	md5_append(&state, data, size);
-	md5_finish(&state, digest);
+    md5_init(&state);
+    md5_append(&state, data, size);
+    md5_finish(&state, digest);
 }
 
 size_t parse_token(char *buf, size_t size) {
