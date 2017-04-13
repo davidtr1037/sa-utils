@@ -1,5 +1,8 @@
 #include <stdbool.h>
 #include <iostream>
+#include <map>
+#include <set>
+#include <vector>
 
 #include <llvm/IR/Module.h>
 #include <llvm/IR/Instruction.h>
@@ -12,19 +15,20 @@
 #include "ModRefAnalysis.h"
 #include "Annotator.h"
 
+using namespace std;
 using namespace llvm;
 
 void Annotator::annotate() {
     for (ModRefAnalysis::AllocSiteToStoreMap::iterator i = mra->allocSiteToStoreMap.begin(); i != mra->allocSiteToStoreMap.end(); i++) {
-        std::pair<const Value *, uint64_t> key = i->first;
-        std::set<Instruction *> stores = i->second;
+        ModRefAnalysis::AllocSite key = i->first;
+        set<Instruction *> stores = i->second;
         uint32_t sliceId = mra->allocSiteToIdMap[key];
         annotateStores(stores, sliceId);
     }
 }
 
-void Annotator::annotateStores(std::set<Instruction *> &stores, uint32_t sliceId) {
-    for (std::set<Instruction *>::iterator i = stores.begin(); i != stores.end(); i++) {
+void Annotator::annotateStores(set<Instruction *> &stores, uint32_t sliceId) {
+    for (set<Instruction *>::iterator i = stores.begin(); i != stores.end(); i++) {
         Instruction *inst = *i;
         annotateStore(inst, sliceId);
     }
@@ -32,35 +36,70 @@ void Annotator::annotateStores(std::set<Instruction *> &stores, uint32_t sliceId
 
 void Annotator::annotateStore(Instruction *inst, uint32_t sliceId) {
     StoreInst *store = dyn_cast<StoreInst>(inst);
-    Value *pointer = store->getPointerOperand();
+    Value *pointerOperand = store->getPointerOperand();
 
     /* generate a unique argument name */
-    std::string *name = new std::string(std::string("__crit_arg_") + std::to_string(argId++));
+    string *name = new string(string("__crit_arg_") + to_string(argId++));
     /* insert load */
-    LoadInst *loadInst = new LoadInst(pointer, name->data());
+    LoadInst *loadInst = new LoadInst(pointerOperand, name->data());
     loadInst->setAlignment(store->getAlignment());
     loadInst->insertAfter(inst);
 
-    /* generate a unique function name */
-    std::string fname = getAnnotatedName(sliceId);
-
     /* create criterion function */
-    PointerType *pointerType = dyn_cast<PointerType>(pointer->getType());
-    module->getOrInsertFunction(
-        fname,
-        Type::getVoidTy(module->getContext()), 
-        pointerType->getElementType(),
-        NULL
-    );
-    Function *criterionFunction = module->getFunction(fname);
+    Function *criterionFunction = getCriterionFunction(pointerOperand, sliceId);
 
     /* insert call */
-    std::vector<Value* > args;
+    vector<Value* > args;
     args.push_back(dyn_cast<Value>(loadInst));
     CallInst *callInst = CallInst::Create(criterionFunction, args, "");
     callInst->insertAfter(loadInst);
 }
 
-std::string Annotator::getAnnotatedName(uint32_t id) {
-    return std::string("__crit_") + std::to_string(id);
+Function *Annotator::getCriterionFunction(Value *pointerOperand, uint32_t sliceId) {
+    PointerType *pointerType = dyn_cast<PointerType>(pointerOperand->getType());
+    Type *requiredType = pointerType->getElementType();
+
+    /* get annotation info */
+    AnnotationInfo &ai = annotationsMap[sliceId];
+
+    /* search for matching functions */
+    for (set<string>::iterator i = ai.fnames.begin(); i != ai.fnames.end(); i++) {
+        string fname = *i;
+        Function *f = module->getFunction(fname);
+        assert(f);
+
+        /* a criterion function has exactly one parameter */
+        Type *argType = f->getFunctionType()->getParamType(0);
+        if (argType == requiredType) {
+            return f;
+        }
+    }
+
+    /* generate a unique function name */
+    string fname = getAnnotatedName(sliceId, ai.subId);
+    module->getOrInsertFunction(
+        fname,
+        Type::getVoidTy(module->getContext()), 
+        requiredType,
+        NULL
+    );
+
+    ai.subId++;
+    ai.fnames.insert(fname);
+
+    return module->getFunction(fname);
+}
+
+string Annotator::getAnnotatedName(uint32_t sliceId, uint32_t subId) {
+    return string("__crit_") + to_string(sliceId) + string("_") + to_string(subId);
+}
+
+set<string> &Annotator::getAnnotatedNames(uint32_t sliceId) {
+    AnnotationsMap::iterator i = annotationsMap.find(sliceId);
+    if (i == annotationsMap.end()) {
+        /* TODO: this should not happen */
+        assert(false);
+    }
+
+    return i->second.fnames;
 }

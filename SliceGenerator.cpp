@@ -20,7 +20,11 @@ void SliceGenerator::generate() {
         if (sliceId == mra->retSliceId) {
             criterions.push_back("ret");
         } else {
-            criterions.push_back(Annotator::getAnnotatedName(sliceId));
+            std::set<std::string> &fnames = annotator->getAnnotatedNames(sliceId);
+            for (std::set<std::string>::iterator i = fnames.begin(); i != fnames.end(); i++) {
+                std::string fname = *i;
+                criterions.push_back(fname);
+            }
         }
 
         /* generate slice */

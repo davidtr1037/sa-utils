@@ -8,15 +8,17 @@
 
 #include "AAPass.h"
 #include "ModRefAnalysis.h"
+#include "Annotator.h"
 #include "Cloner.h"
 
 class SliceGenerator {
 public:
 
-    SliceGenerator(llvm::Module *module, AAPass *aa, ModRefAnalysis *mra, Cloner *cloner) :
+    SliceGenerator(llvm::Module *module, AAPass *aa, ModRefAnalysis *mra, Annotator *annotator, Cloner *cloner) :
         module(module), 
         aa(aa), 
         mra(mra), 
+        annotator(annotator),
         cloner(cloner)
     {
 
@@ -31,6 +33,7 @@ public:
     llvm::Module *module;
     AAPass *aa;
     ModRefAnalysis *mra;
+    Annotator *annotator;
     Cloner *cloner;
 };
 

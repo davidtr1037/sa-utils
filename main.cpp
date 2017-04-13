@@ -70,7 +70,7 @@ int main(int argc, char *argv[]) {
     Cloner *cloner = new Cloner(module, ra, mra);
     cloner->run();
 
-    SliceGenerator *sg = new SliceGenerator(module, aa, mra, cloner);
+    SliceGenerator *sg = new SliceGenerator(module, aa, mra, annotator, cloner);
     sg->generate();
     sg->dumpSlices();
 
