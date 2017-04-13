@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 
 #include "dict.h"
 #include "crc32.h"
@@ -14,7 +15,7 @@ void dict_init(dict_t *dict, size_t size) {
     }
 }
 
-void dict_lookup(dict_t *dict, char *name, size_t len) {
+bool dict_exists(dict_t *dict, char *name, size_t len) {
     /* compute hash */
     unsigned int h = crc32(0, name, len);
     h = h % dict->size; 
@@ -23,18 +24,22 @@ void dict_lookup(dict_t *dict, char *name, size_t len) {
     while (current) {
         if (strcmp(name, current->name) == 0) {
             /* found... */
-            return;
+            return true;
         }
         current = current->next;
     }
-    
-    dict_add(dict, name, len);
+
+    return false;
 }
 
 void dict_add(dict_t *dict, char *name, size_t len) {
     /* compute hash */
     unsigned int h = crc32(0, name, len);
     h = h % dict->size; 
+
+    if (dict_exists(dict, name, len)) {
+        return;
+    }
 
     /* allocate new entry */
     dict_entry_t *new_entry = calloc(1, sizeof(*new_entry));

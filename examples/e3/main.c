@@ -26,7 +26,6 @@ void hash(void *data, size_t size, unsigned char digest[16]) {
 size_t parse_token(char *buf, size_t size) {
     size_t len = 0;
 
-    /* TODO: insert a bug... (use md5_append?) */
     for (unsigned int i = 0; i < size; i++) {
         char c = buf[i];
         if (c == '\0' || c == '\n') {
@@ -44,11 +43,13 @@ void check_token(char *buf, size_t token_size) {
 
     /* get token hash */
     hash(buf, token_size, digest);
+
     /* expected hash */
     for (unsigned int i = 0; i < sizeof(correct_digest); i++) {
         correct_digest[i] = i;
     }
 
+    /* compare... */
     if (memcmp(digest, correct_digest, 16) == 0) {
         printf("OK\n");
     }

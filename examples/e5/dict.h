@@ -17,7 +17,7 @@ typedef struct {
 
 void dict_init(dict_t *dict, size_t size);
 
-void dict_lookup(dict_t *dict, char *name, size_t len);
+bool dict_exists(dict_t *dict, char *name, size_t len);
 
 void dict_add(dict_t *dict, char *name, size_t len);
 
