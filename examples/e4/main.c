@@ -22,9 +22,6 @@ void parser_init(parser_t *parser, char *input) {
 }
 
 void parser_parse_name(parser_t *parser) {
-    char *name = NULL;
-    int len = 0;
-
     /* skip new lines... */
     while (*parser->input != 0) {
         if (*parser->input != '\n') {
