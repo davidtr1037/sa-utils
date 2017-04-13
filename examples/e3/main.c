@@ -1,11 +1,12 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <stdbool.h>
 #include <assert.h>
 
 #include <klee/klee.h>
 
-#include "crc32.h"
+#include "md5.h"
 
 #define BUG() \
 { \
@@ -13,39 +14,54 @@
     *p = 0; \
 }
 
-unsigned int parse_lines(char *buf, size_t size) {
-    unsigned int count = 0;
+void hash(void *data, size_t size, unsigned char digest[16]) {
+	md5_state_t state;
 
-    for (unsigned int i = 0; i < size; i++) {
-        if (buf[i] == '\n') {
-            count++;
-        }
-    }
-
-    return count;
+    /* compute hash... */
+	md5_init(&state);
+	md5_append(&state, data, size);
+	md5_finish(&state, digest);
 }
 
-void target(char *buf, size_t size, int *lines) {
-    *lines = parse_lines(buf, size);
+size_t parse_token(char *buf, size_t size) {
+    size_t len = 0;
 
-    unsigned int h = crc32(0, buf, size);
-    if (h == 17) {
-        printf("OK...\n");
-    } else {
-        printf("ERROR...\n");
+    /* TODO: insert a bug... (use md5_append?) */
+    for (unsigned int i = 0; i < size; i++) {
+        char c = buf[i];
+        if (c == '\0' || c == '\n') {
+            break;
+        }
+        len++;
+    }
+
+    return len; 
+}
+
+void check_token(char *buf, size_t token_size) {
+    unsigned char digest[16];
+    unsigned char correct_digest[16];
+
+    /* get token hash */
+    hash(buf, token_size, digest);
+    /* expected hash */
+    for (unsigned int i = 0; i < sizeof(correct_digest); i++) {
+        correct_digest[i] = i;
+    }
+
+    if (memcmp(digest, correct_digest, 16) == 0) {
+        printf("OK\n");
     }
 }
 
 int main(int argc, char *argv[]) {
     char buf[8];
-    int lines = 0;
+    size_t token_size;
 
     klee_make_symbolic(&buf, sizeof(buf), "buf");
 
-    target(buf, sizeof(buf), &lines);
-    //if (lines == 1) {
-    //    BUG();
-    //}
+    token_size = parse_token(buf, sizeof(buf));
+    check_token(buf, token_size);
 
     return 0;
 }
