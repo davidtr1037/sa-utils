@@ -6,3 +6,6 @@
 *.swp
 *.orig
 *.log
+klee-out-*
+klee-last
+*.sliced
