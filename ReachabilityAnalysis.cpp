@@ -20,7 +20,8 @@ using namespace llvm;
 void ReachabilityAnalysis::run() {
     /* collect function type map for indirect calls */
     computeFunctionTypeMap();
-    //computeReachableFunctions(getEntryPoint(), reachable);
+    computeReachableFunctions(getEntryPoint(), reachable);
+    dumpReachableFunctions();
     //removeUnreachableFunctions();
 }
 
@@ -31,8 +32,6 @@ void ReachabilityAnalysis::computeReachableFunctions(Function *entry, std::set<F
     if (!entry) {
         return;
     }
-
-    unsigned int k = 1;
 
     stack.push(entry);
     pushed.insert(entry);
@@ -52,7 +51,6 @@ void ReachabilityAnalysis::computeReachableFunctions(Function *entry, std::set<F
 
             /* potential call targets */
             std::set<Function *> targets;
-            errs() << "caller: " << f->getName() << "\n";
             getCallTargets(call_inst, targets);
 
             for (std::set<Function *>::iterator i = targets.begin(); i != targets.end(); i++) {
@@ -64,15 +62,12 @@ void ReachabilityAnalysis::computeReachableFunctions(Function *entry, std::set<F
                 }
 
                 if (pushed.find(target) == pushed.end()) {
-                    errs() << target->getName() << "\n";
                     stack.push(target);
                     pushed.insert(target);
-                    k++;
                 }
             }
         }
     }
-    errs() << "Total: " << k << "\n";
 }
 
 void ReachabilityAnalysis::computeFunctionTypeMap() {
@@ -160,5 +155,13 @@ void ReachabilityAnalysis::removeUnreachableFunctions() {
         Function *f = *i;
         f->replaceAllUsesWith(UndefValue::get(f->getType()));
         f->eraseFromParent();
+    }
+}
+
+void ReachabilityAnalysis::dumpReachableFunctions() {
+    errs() << reachable.size() << " reachable functions:\n";
+    for (std::set<Function *>::iterator i = reachable.begin(); i != reachable.end(); i++) {
+        Function *f = *i;
+        errs() << "    " << f->getName() << "\n";
     }
 }

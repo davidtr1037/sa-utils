@@ -23,6 +23,8 @@ public:
 
     void getCallTargets(llvm::CallInst *call_inst, std::set<llvm::Function *> &targets);
 
+    void dumpReachableFunctions();
+
 private:
 
     void computeFunctionTypeMap();
