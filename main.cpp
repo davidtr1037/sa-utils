@@ -55,7 +55,7 @@ int main(int argc, char *argv[]) {
     ra->run(); 
 
     AAPass *aa = new AAPass();
-    aa->setPAType(PointerAnalysis::AndersenWaveDiff_WPA);
+    aa->setPAType(PointerAnalysis::Andersen_WPA);
 
     legacy::PassManager pm;
     pm.add(aa);
