@@ -177,6 +177,7 @@ void SVFPointerAnalysis::handleOperand(PSNode *operand) {
         operand->addPointsTo(NULLPTR);
         return;
     }
+
     for (PointsTo::iterator i = pts.begin(); i != pts.end(); ++i) {
         NodeID node_id = *i;
         PAGNode *pagnode = aa->getPTA()->getPAG()->getPAGNode(node_id);
@@ -216,7 +217,7 @@ PSNode *SVFPointerAnalysis::getAllocNode(ObjPN *node) {
     PSNode *ref_node = pta->builder->getNode(mo->getRefVal());
     /* TODO: handle unexpected result */
     if (!ref_node) {
-        //assert(false);
+        assert(false);
     }
 
     return ref_node;
@@ -231,6 +232,7 @@ uint64_t SVFPointerAnalysis::getAllocNodeOffset(GepObjPN *node) {
     /* offset in bytes */
     unsigned offsetInBytes = ls.getAccOffset();
     //outs() << "GepObjNode location set: " << offset << "\n";
+    //outs() << "GepObjNode offset: " << offsetInBytes << "\n";
 
     const MemObj *mo = node->getMemObj();
     if (!(mo->isStruct() || mo->isArray() || mo->isHeap() || mo->isFunction())) {
