@@ -310,6 +310,11 @@ ModRefAnalysis::AllocSite ModRefAnalysis::getApproximateAllocSite(Instruction *i
         }
     }
 
+    if (approximateAllocSites.empty()) {
+        /* TODO: something went wrong with the static analysis... */
+        assert(false);
+    }
+
     /* TODO: this assumption does not hold if we have a buffer in a struct */
     assert(approximateAllocSites.size() == 1);
     return *approximateAllocSites.begin();
