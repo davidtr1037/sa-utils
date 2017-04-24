@@ -21,8 +21,8 @@ void ReachabilityAnalysis::run() {
     /* collect function type map for indirect calls */
     computeFunctionTypeMap();
     computeReachableFunctions(getEntryPoint(), reachable);
+    removeUnreachableFunctions();
     dumpReachableFunctions();
-    //removeUnreachableFunctions();
 }
 
 void ReachabilityAnalysis::computeReachableFunctions(Function *entry, std::set<Function *> &results) {
