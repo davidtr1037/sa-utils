@@ -31,6 +31,7 @@ void ModRefAnalysis::run() {
 
     dumpMod();
     dumpLoadToStoreMap();
+    dumpAllocSiteToIdMap();
     dumpAllocSiteToStoreMap();
 }
 
@@ -359,14 +360,14 @@ void ModRefAnalysis::dumpAllocSiteToStoreMap() {
 }
 
 void ModRefAnalysis::dumpAllocSiteToIdMap() {
-    errs() << "AllocSiteToIdMap:\n";
+    outs() << "AllocSiteToIdMap:\n";
     for (AllocSiteToIdMap::iterator i = allocSiteToIdMap.begin(); i != allocSiteToIdMap.end(); i++) {
         std::pair<const Value *, uint64_t> key = i->first;
         const Value *allocSite = key.first;
         uint64_t offset = key.second;
-        errs() << "AS: "; allocSite->print(errs()); errs() << "\n";
-        errs() << "OFFSET: " << offset << "\n";
-        errs() << "ID: " << i->second << "\n";
+        outs() << "AS: "; allocSite->print(outs()); outs() << "\n";
+        outs() << "OFFSET: " << offset << "\n";
+        outs() << "ID: " << i->second << "\n";
     }
 }
 
