@@ -126,18 +126,11 @@ void ReachabilityAnalysis::getCallTargets(CallInst *call_inst, std::set<Function
 
         if (functionTypeMap.find(type) != functionTypeMap.end()) {
             std::set<Function *> functions = functionTypeMap.find(type)->second;
-
-            errs() << "-- count: " << functions.size() << "\n";
-            for (std::set<Function *>::iterator temp = functions.begin(); temp !=functions.end(); temp++) {
-                Function *temp_f = *temp;
-                //errs() << "---- " << f->getName() << " -> " << temp_f->getName() << "\n";
-            }
-
             targets.insert(functions.begin(), functions.end());
+            errs() << functions.size() << " target functions" << "\n";
         }
     } else {
         targets.insert(called_function);
-        //errs() << "---- " << f->getName() << " -> " << called_function->getName() << "\n";
     }
 }
 
