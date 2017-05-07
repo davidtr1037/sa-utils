@@ -1,17 +1,20 @@
-LLVM_SRC_PATH=/home/david/tau/llvm-3.4.src
-LLVM_OBJ_PATH=/home/david/tau/llvm-3.4.obj
-LLVM_CONFIG=$(LLVM_OBJ_PATH)/Release+Asserts/bin/llvm-config
-WPA_PATH=/home/david/tau/SVF-port-3.4
-DG_PATH=/home/david/tau/dg/
+check_var = \
+    $(if $(value $(1)),,$(error "$(1) is not defined"))
 
+$(call check_var,LLVM_SRC)
+$(call check_var,LLVM_OBJ)
+$(call check_var,SVF_PATH)
+$(call check_var,DG_PATH)
+
+LLVM_CONFIG=$(LLVM_OBJ)/Release+Asserts/bin/llvm-config
 LLVM_LIBS=$(shell $(LLVM_CONFIG) --libs)
 LLVM_LDFLAGS=$(shell $(LLVM_CONFIG) --ldflags)
 CXX=g++ -m32
 
 INCLUDES=\
-    -I$(LLVM_SRC_PATH)/include/ \
-    -I$(LLVM_OBJ_PATH)/include/ \
-    -I$(WPA_PATH)/include \
+    -I$(LLVM_SRC)/include/ \
+    -I$(LLVM_OBJ)/include/ \
+    -I$(SVF_PATH)/include \
     -I$(DG_PATH)/src \
     -I$(DG_PATH)/tools \
     -I.
@@ -19,15 +22,15 @@ INCLUDES=\
 CXXFLAGS=$(INCLUDES) -DHAVE_LLVM -DENABLE_CFG -D__STDC_LIMIT_MACROS -D__STDC_CONSTANT_MACROS -std=gnu++11 -g -fno-rtti
 
 EXTERNAL_LIBS=\
-    $(WPA_PATH)/Release+Asserts/lib/libwpa.so \
-    $(WPA_PATH)/Release+Asserts/lib/libmssa.so \
+    $(SVF_PATH)/Release+Asserts/lib/libwpa.so \
+    $(SVF_PATH)/Release+Asserts/lib/libmssa.so \
     $(DG_PATH)/build/src/libLLVMdg.so \
     $(DG_PATH)/build/src/libLLVMpta.so \
     $(DG_PATH)/build/src/libPTA.so \
     $(DG_PATH)/build/src/libRD.so
 
-LDFLAGS=-L$(WPA_PATH)/Release+Asserts/lib -L$(DG_PATH)/build/src $(EXTERNAL_LIBS) $(LLVM_LIBS) $(LLVM_LDFLAGS)
-LIB_LDFLAGS=-L$(WPA_PATH)/Release+Asserts/lib -L$(DG_PATH)/buILD/SRC $(EXTERNAL_LIBS) $(LLVM_LIBS) $(LLVM_LDFLAGS)
+LDFLAGS=-L$(SVF_PATH)/Release+Asserts/lib -L$(DG_PATH)/build/src $(EXTERNAL_LIBS) $(LLVM_LIBS) $(LLVM_LDFLAGS)
+LIB_LDFLAGS=-L$(SVF_PATH)/Release+Asserts/lib -L$(DG_PATH)/buILD/SRC $(EXTERNAL_LIBS) $(LLVM_LIBS) $(LLVM_LDFLAGS)
 
 SOURCES=\
 		ReachabilityAnalysis.cpp \
