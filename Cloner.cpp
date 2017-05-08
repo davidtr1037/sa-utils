@@ -20,9 +20,9 @@ void Cloner::run() {
     Function *entryFunction = module->getFunction(entryName);
 
     ra->computeReachableFunctions(entryFunction, reachable);
-    errs() << reachable.size() << " reachable functions\n";
+    outs() << reachable.size() << " reachable functions\n";
 
-    errs() << "creating " << mra->sliceIds.size() << " slices\n";
+    outs() << "creating " << mra->sliceIds.size() << " slices\n";
     for (ModRefAnalysis::SliceIds::iterator i = mra->sliceIds.begin(); i != mra->sliceIds.end(); i++) {
         uint32_t sliceId = *i;
         for (std::set<Function *>::iterator j = reachable.begin(); j != reachable.end(); j++) {
@@ -30,7 +30,7 @@ void Cloner::run() {
             if (f->isDeclaration()) {
                 continue;
             }
-            errs() << "cloning: " << f->getName() << "\n";
+            outs() << "cloning: " << f->getName() << "\n";
             cloneFunction(f, sliceId);
         }
     }
@@ -115,7 +115,8 @@ Value *Cloner::translateValue(Value *value) {
     ValueTranslationMap *map = entry->second;
     ValueTranslationMap::iterator i = map->find(value);
     if (i == map->end()) {
-        assert(false);
+        /* TODO: add assert instead? */
+        return NULL;
     }
     return i->second;
 }

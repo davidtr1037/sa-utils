@@ -120,14 +120,14 @@ void ReachabilityAnalysis::getCallTargets(CallInst *call_inst, std::set<Function
             return;
         }
 
-        errs() << "indirect call: ";
-        type->print(errs());
-        errs() << "\n";
+        outs() << "indirect call: ";
+        type->print(outs());
+        outs() << "\n";
 
         if (functionTypeMap.find(type) != functionTypeMap.end()) {
             std::set<Function *> functions = functionTypeMap.find(type)->second;
             targets.insert(functions.begin(), functions.end());
-            errs() << functions.size() << " target functions" << "\n";
+            outs() << functions.size() << " target functions" << "\n";
         }
     } else {
         targets.insert(called_function);
@@ -152,9 +152,9 @@ void ReachabilityAnalysis::removeUnreachableFunctions() {
 }
 
 void ReachabilityAnalysis::dumpReachableFunctions() {
-    errs() << reachable.size() << " reachable functions:\n";
+    outs() << reachable.size() << " reachable functions:\n";
     for (std::set<Function *>::iterator i = reachable.begin(); i != reachable.end(); i++) {
         Function *f = *i;
-        errs() << "    " << f->getName() << "\n";
+        outs() << "    " << f->getName() << "\n";
     }
 }

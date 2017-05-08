@@ -38,12 +38,12 @@ void SliceGenerator::generate() {
 }
 
 void SliceGenerator::dumpSlices(Function *f) {
-    f->dump();
+    f->print(outs());
     for (ModRefAnalysis::SliceIds::iterator i = mra->sliceIds.begin(); i != mra->sliceIds.end(); i++) {
         uint32_t sliceId = *i;
         Cloner::SliceInfo *si = cloner->getSlice(f, sliceId);
         Function *sliced = si->first;
-        sliced->dump();
+        sliced->print(outs());
     }
 }
 
