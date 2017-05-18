@@ -55,15 +55,15 @@ void check_token(char *buf, size_t token_size) {
     }
 }
 
-void run(char *buf, size_t size) {
+void run(char *buf, size_t buf_size) {
     size_t token_size;
 
-    token_size = parse_token(buf, sizeof(buf));
+    token_size = parse_token(buf, buf_size);
     check_token(buf, token_size);
 }
 
 int main(int argc, char *argv[]) {
-    char buf[8];
+    char buf[4];
 
     klee_make_symbolic(&buf, sizeof(buf), "buf");
 

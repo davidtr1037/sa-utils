@@ -86,7 +86,7 @@ void parser_parse(parser_t *parser) {
 
 int main(int argc, char *argv[]) {
     parser_t parser;
-    char buf[12];
+    char buf[8];
 
     klee_make_symbolic(&buf, sizeof(buf), "buf");
     klee_assume(buf[sizeof(buf) - 1] == 0);
