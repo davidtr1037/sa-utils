@@ -1,5 +1,7 @@
 #include <stdbool.h>
 #include <iostream>
+#include <set>
+#include <map>
 
 #include <llvm/IR/Module.h>
 #include <llvm/IR/Function.h>
@@ -14,22 +16,41 @@
 #include "ModRefAnalysis.h"
 #include "Cloner.h"
 
+using namespace std;
 using namespace llvm;
 
+Cloner::Cloner(llvm::Module *module, ReachabilityAnalysis *ra, ModRefAnalysis *mra) :
+    module(module),
+    ra(ra),
+    mra(mra),
+    targets(mra->getTargets())
+{
+
+}
+
 void Cloner::run() {
-    Function *entryFunction = module->getFunction(entryName);
+    ModRefAnalysis::ModInfoToIdMap &modInfoToIdMap = mra->getModInfoToIdMap();
 
-    ra->computeReachableFunctions(entryFunction, reachable);
-    outs() << reachable.size() << " reachable functions\n";
+    for (ModRefAnalysis::ModInfoToIdMap::iterator i = modInfoToIdMap.begin(); i != modInfoToIdMap.end(); i++) {
+        ModRefAnalysis::ModInfo modInfo = i->first;
+        uint32_t sliceId = i->second;
 
-    outs() << "creating " << mra->sliceIds.size() << " slices\n";
-    for (ModRefAnalysis::SliceIds::iterator i = mra->sliceIds.begin(); i != mra->sliceIds.end(); i++) {
-        uint32_t sliceId = *i;
-        for (std::set<Function *>::iterator j = reachable.begin(); j != reachable.end(); j++) {
+        Function *f = modInfo.first;
+
+        /* compute reachable functions only once */
+        if (reachabilityMap.find(f) == reachabilityMap.end()) {
+            set<Function *> &reachable = reachabilityMap[f];
+            ra->computeReachableFunctions(f, reachable);
+            outs() << f->getName() << ": " << reachable.size() << " reachable functions\n";
+        }
+
+        set<Function *> &cached = reachabilityMap[f];
+        for (set<Function *>::iterator j = cached.begin(); j != cached.end(); j++) {
             Function *f = *j;
             if (f->isDeclaration()) {
                 continue;
             }
+
             outs() << "cloning: " << f->getName() << "\n";
             cloneFunction(f, sliceId);
         }
@@ -42,11 +63,11 @@ void Cloner::cloneFunction(Function *f, uint32_t sliceId) {
     Function *cloned = CloneFunction(f, *vmap, true);
 
     /* set function name */
-    std::string clonedName = std::string(f->getName().data()) + std::string("_clone_") + std::to_string(sliceId);
+    string clonedName = string(f->getName().data()) + string("_clone_") + to_string(sliceId);
     cloned->setName(StringRef(clonedName));
 
     /* update map */
-    SliceInfo sliceInfo = std::make_pair(cloned, vmap);
+    SliceInfo sliceInfo = make_pair(cloned, vmap);
     functionMap[f][sliceId] = sliceInfo;
 
     /* update map */
@@ -60,7 +81,7 @@ Cloner::ValueTranslationMap *Cloner::buildReversedMap(ValueToValueMapTy *vmap) {
         Value *value = (Value *)(i->first);
         WeakVH &wvh = i->second;
         Value *mappedValue  = &*wvh;
-        map->insert(std::make_pair(mappedValue, value));
+        map->insert(make_pair(mappedValue, value));
     }
 
     return map;
@@ -119,6 +140,10 @@ Value *Cloner::translateValue(Value *value) {
         return NULL;
     }
     return i->second;
+}
+
+Cloner::ReachabilityMap &Cloner::getReachabilityMap() {
+    return reachabilityMap;
 }
 
 Cloner::~Cloner() {
