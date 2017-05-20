@@ -19,10 +19,14 @@ using namespace std;
 using namespace llvm;
 
 void Annotator::annotate() {
-    for (ModRefAnalysis::AllocSiteToStoreMap::iterator i = mra->allocSiteToStoreMap.begin(); i != mra->allocSiteToStoreMap.end(); i++) {
-        ModRefAnalysis::AllocSite key = i->first;
-        set<Instruction *> stores = i->second;
-        uint32_t sliceId = mra->allocSiteToIdMap[key];
+    ModRefAnalysis::ModInfoToStoreMap &modInfoToStoreMap = mra->getModInfoToStoreMap();
+    ModRefAnalysis::ModInfoToIdMap &modInfoToIdMap = mra->getModInfoToIdMap();
+
+    for (ModRefAnalysis::ModInfoToStoreMap::iterator i = modInfoToStoreMap.begin(); i != modInfoToStoreMap.end(); i++) {
+        ModRefAnalysis::ModInfo modInfo = i->first;
+        set<Instruction *> &stores = i->second;
+
+        uint32_t sliceId = modInfoToIdMap[modInfo];
         annotateStores(stores, sliceId);
     }
 }
