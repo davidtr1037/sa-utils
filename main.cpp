@@ -30,8 +30,8 @@ using namespace std;
 using namespace llvm;
 
 int main(int argc, char *argv[]) {
-    if (argc != 3) {
-        fprintf(stderr, "Usage: <bitcode-file> <sliced-function-name>\n");
+    if (argc < 3) {
+        fprintf(stderr, "Usage: <bitcode-file> <sliced-function-1> <sliced-function-2> ... \n");
         return 1;
     }
 
@@ -45,10 +45,14 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    std::string slicedFunction = std::string(argv[2]);
-    if (!module->getFunction(slicedFunction)) {
-        fprintf(stderr, "Sliced function not found...\n");
-        return 1;
+    vector<string> targets;
+    for (unsigned int i = 2; i < argc; i++) {
+        std::string slicedFunction = std::string(argv[i]);
+        if (!module->getFunction(slicedFunction)) {
+            fprintf(stderr, "Sliced function '%s' not found...\n", argv[i]);
+            return 1;
+        }
+        targets.push_back(slicedFunction);
     }
 
     ReachabilityAnalysis *ra = new ReachabilityAnalysis(module);
@@ -61,7 +65,7 @@ int main(int argc, char *argv[]) {
     pm.add(aa);
     pm.run(*module);
 
-    ModRefAnalysis *mra = new ModRefAnalysis(module, ra, aa, "main", slicedFunction);
+    ModRefAnalysis *mra = new ModRefAnalysis(module, ra, aa, "main", targets);
     mra->run();
 
     Annotator *annotator = new Annotator(module, mra);
