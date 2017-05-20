@@ -21,7 +21,7 @@ public:
     typedef std::map<llvm::Function *, PointsTo> ModPtsMap;
     typedef std::map<llvm::Function *, InstructionSet> SideEffectsMap;
 
-    typedef std::map<NodeID, InstructionSet> ObjToStoreMap;
+    typedef std::map<std::pair<llvm::Function *, NodeID>, InstructionSet> ObjToStoreMap;
     typedef std::map<NodeID, InstructionSet> ObjToLoadMap;
     typedef std::map<llvm::Instruction *, InstructionSet> LoadToStoreMap;
 
@@ -42,10 +42,19 @@ public:
         std::vector<std::string> targets
     );
 
+    llvm::Function *getEntry();
+
+    std::vector<llvm::Function *> getTargets();
+
     void run();
 
-    /* TODO: implement... */
-    void getRetSliceId(llvm::Function *f);
+    ModInfoToStoreMap &getModInfoToStoreMap();
+
+    ModInfoToIdMap &getModInfoToIdMap();
+
+    bool hasRetSlice(llvm::Function *f);
+
+    uint32_t getRetSliceId(llvm::Function *f);
 
     void getApproximateAllocSite(llvm::Instruction *inst, AllocSite hint);
 
@@ -99,20 +108,17 @@ private:
     ObjToStoreMap objToStoreMap;
     PointsTo refPts;
     ObjToLoadMap objToLoadMap;
-    /* TODO: no need to hold the store instructions */
-    LoadToStoreMap loadToStoreMap;
-    LoadToModInfoMap loadToModInfoMap;
-    /* TODO: is it required? */
+
     SideEffectsMap sideEffectsMap;
 
-    //AllocSiteToStoreMap allocSiteToStoreMap;
-    ModInfoToStoreMap modInfoToStoreMap;
+    /* TODO: no need to hold the store instructions */
+    LoadToStoreMap loadToStoreMap;
 
+    LoadToModInfoMap loadToModInfoMap;
+    ModInfoToStoreMap modInfoToStoreMap;
     ModInfoToIdMap modInfoToIdMap;
     IdToModInfoMap idToModInfoMap;
     RetSliceIdMap retSliceIdMap;
-    //uint32_t retSliceId;
-    //SliceIds sliceIds;
 };
 
 #endif
