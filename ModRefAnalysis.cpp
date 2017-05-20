@@ -39,6 +39,27 @@ ModRefAnalysis::ModRefAnalysis(
     }
 }
 
+Function *ModRefAnalysis::getEntry() {
+    return entryFunction;
+}
+
+vector<Function *> ModRefAnalysis::getTargets() {
+    return targetFunctions;
+}
+
+bool ModRefAnalysis::hasRetSlice(Function *f) {
+    RetSliceIdMap::iterator i = retSliceIdMap.find(f);
+    return i != retSliceIdMap.end();
+}
+
+uint32_t ModRefAnalysis::getRetSliceId(llvm::Function *f) {
+    RetSliceIdMap::iterator i = retSliceIdMap.find(f);
+    if (i == retSliceIdMap.end()) {
+        assert(false);
+    }
+
+    return i->second;
+}
 
 void ModRefAnalysis::run() {
     /* collect mod information for each target function */
@@ -46,18 +67,26 @@ void ModRefAnalysis::run() {
         Function *f = *i;
         collectModInfo(f);
     }
-
     /* collect ref information for the whole program (can be optimized) */
     collectRefInfo(entryFunction);
-    /* ... */
+    /* compute the side effects of each target function */
     computeModRefInfo();
     /* ... */
     computeModInfoToStoreMap();
 
+    /* debug */
     dumpSideEffects();
     dumpLoadToStoreMap();
-    dumpAllocSiteToIdMap();
     dumpAllocSiteToStoreMap();
+    dumpAllocSiteToIdMap();
+}
+
+ModRefAnalysis::ModInfoToStoreMap &ModRefAnalysis::getModInfoToStoreMap() {
+    return modInfoToStoreMap;
+}
+
+ModRefAnalysis::ModInfoToIdMap &ModRefAnalysis::getModInfoToIdMap() {
+    return modInfoToIdMap;
 }
 
 void ModRefAnalysis::collectModInfo(Function *f) {
@@ -108,7 +137,8 @@ void ModRefAnalysis::addStore(Function *f, Instruction *store_inst) {
 
     for (PointsTo::iterator i = pts.begin(); i != pts.end(); ++i) {
         NodeID node_id = *i;
-        objToStoreMap[node_id].insert(store_inst);
+        pair<Function *, NodeID> k = make_pair(f, node_id);
+        objToStoreMap[k].insert(store_inst);
     }
 }
 
@@ -186,7 +216,8 @@ void ModRefAnalysis::computeModRefInfo() {
 
         for (PointsTo::iterator ni = pts.begin(); ni != pts.end(); ++ni) {
             NodeID node_id = *ni;
-            set<Instruction *> stores = objToStoreMap[node_id];
+            pair<Function *, NodeID> k = make_pair(f, node_id);
+            set<Instruction *> stores = objToStoreMap[k];
             sideEffects.insert(stores.begin(), stores.end());
 
             set<Instruction *> load_insts = objToLoadMap[node_id];
@@ -206,12 +237,13 @@ void ModRefAnalysis::computeModRefInfo() {
 }
 
 void ModRefAnalysis::computeModInfoToStoreMap() {
+    uint32_t sliceId = 1;
+
     for (vector<Function *>::iterator i = targetFunctions.begin(); i != targetFunctions.end(); i++) {
         Function *f = *i;
         InstructionSet &sideEffects = sideEffectsMap[f];
-        uint32_t id = 0;
 
-        uint32_t retSliceId = id++;
+        uint32_t retSliceId = sliceId++;
         if (hasReturnValue(f)) {
             retSliceIdMap[f] = retSliceId;
         }
@@ -231,9 +263,9 @@ void ModRefAnalysis::computeModInfoToStoreMap() {
                 modInfoToStoreMap[modInfo].insert(inst);
 
                 if (modInfoToIdMap.find(modInfo) == modInfoToIdMap.end()) {
-                    uint32_t sliceId = id++;
                     modInfoToIdMap[modInfo] = sliceId;
                     idToModInfoMap[sliceId] = modInfo;
+                    sliceId++;
                 }
             }
         }
@@ -312,7 +344,7 @@ void ModRefAnalysis::getApproximateAllocSite(Instruction *inst, AllocSite hint) 
 }
 
 void ModRefAnalysis::dumpSideEffects() {
-    outs() << "side effects\n";
+    outs() << "side effects:\n";
     for (SideEffectsMap::iterator i = sideEffectsMap.begin(); i != sideEffectsMap.end(); i++) {
         Function *f = i->first;
         InstructionSet &sideEffects = i->second;
@@ -358,9 +390,9 @@ void ModRefAnalysis::dumpAllocSiteToStoreMap() {
         const Value *value = allocSite.first;
         uint64_t offset = allocSite.second;
 
-        outs() << "function: " << f->getName() << "\n";
-        outs() << "allocation site: "; value->print(outs()); outs() << "\n";
-        outs() << "offset: " << offset << "\n";
+        outs() << "- function: " << f->getName() << "\n";
+        outs() << "- allocation site: "; value->print(outs()); outs() << "\n";
+        outs() << "- offset: " << offset << "\n";
 
         for (InstructionSet::iterator j = stores.begin(); j != stores.end(); j++) {
             Instruction *store = *j;
@@ -381,9 +413,9 @@ void ModRefAnalysis::dumpAllocSiteToIdMap() {
         const Value *value = allocSite.first;
         uint64_t offset = allocSite.second;
 
-        outs() << "function: " << f->getName() << "\n";
-        outs() << "allocation site: "; value->print(outs()); outs() << "\n";
-        outs() << "offset: " << offset << "\n";
-        outs() << "id: " << id << "\n";
+        outs() << "- function: " << f->getName() << "\n";
+        outs() << "- allocation site: "; value->print(outs()); outs() << "\n";
+        outs() << "- offset: " << offset << "\n";
+        outs() << "- id: " << id << "\n";
     }
 }
