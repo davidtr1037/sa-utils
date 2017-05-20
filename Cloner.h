@@ -3,6 +3,8 @@
 
 #include <stdbool.h>
 #include <iostream>
+#include <set>
+#include <map>
 
 #include <llvm/IR/Module.h>
 #include <llvm/IR/Function.h>
@@ -19,15 +21,9 @@ public:
     typedef std::map<uint32_t, SliceInfo> SliceMap;
     typedef std::map<llvm::Function *, SliceMap> FunctionMap;
     typedef std::map<llvm::Function *, ValueTranslationMap *> CloneInfoMap;
+    typedef std::map<llvm::Function *, std::set<llvm::Function *> > ReachabilityMap;
 
-    Cloner(llvm::Module *module, ReachabilityAnalysis *ra, ModRefAnalysis *mra) :
-        module(module), 
-        ra(ra), 
-        mra(mra),
-        entryName(mra->target)
-    {
-
-    }
+    Cloner(llvm::Module *module, ReachabilityAnalysis *ra, ModRefAnalysis *mra);
 
     ~Cloner();
 
@@ -41,11 +37,13 @@ public:
     
     llvm::Value *translateValue(llvm::Value *);
 
+    ReachabilityMap &getReachabilityMap();
+
+    /* TODO: should be private */
     llvm::Module *module;
     ReachabilityAnalysis *ra;
     ModRefAnalysis *mra;
-    std::string entryName;
-    std::set<llvm::Function *> reachable;
+    std::vector<llvm::Function *> targets;
 
 private:
 
@@ -55,6 +53,9 @@ private:
 
     FunctionMap functionMap;
     CloneInfoMap cloneInfoMap;
+
+    /* it is here for deubg purposes only */
+    ReachabilityMap reachabilityMap;
 };
 
 #endif
