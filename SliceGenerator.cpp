@@ -2,6 +2,7 @@
 #include <iostream>
 
 #include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
 
 #include "ModRefAnalysis.h"
 #include "Annotator.h"
@@ -9,15 +10,20 @@
 #include "Slicer.h"
 #include "SliceGenerator.h"
 
+using namespace std;
 using namespace llvm;
 
 void SliceGenerator::generate() {
-    for (ModRefAnalysis::SliceIds::iterator i = mra->sliceIds.begin(); i != mra->sliceIds.end(); i++) {
-        uint32_t sliceId = *i;
+    ModRefAnalysis::ModInfoToIdMap &modInfoToIdMap = mra->getModInfoToIdMap();
 
-        /* set criterion function */
+    for (ModRefAnalysis::ModInfoToIdMap::iterator i = modInfoToIdMap.begin(); i != modInfoToIdMap.end(); i++) {
+        ModRefAnalysis::ModInfo modInfo = i->first;
+        uint32_t sliceId = i->second;
+        Function *f = modInfo.first;
+
+        /* set criterion functions */
         std::vector<std::string> criterions;
-        if (sliceId == mra->retSliceId) {
+        if (sliceId == mra->getRetSliceId(f)) {
             criterions.push_back("ret");
         } else {
             std::set<std::string> &fnames = annotator->getAnnotatedNames(sliceId);
@@ -28,7 +34,8 @@ void SliceGenerator::generate() {
         }
 
         /* generate slice */
-        Slicer *slicer = new Slicer(module, 0, aa, cloner, cloner->entryName, criterions);
+        string entryName = f->getName().data();
+        Slicer *slicer = new Slicer(module, 0, aa, cloner, entryName, criterions);
         slicer->setSliceId(sliceId);
         slicer->run();
 
@@ -37,23 +44,33 @@ void SliceGenerator::generate() {
     }
 }
 
-void SliceGenerator::dumpSlices(Function *f) {
-    f->print(outs());
-    for (ModRefAnalysis::SliceIds::iterator i = mra->sliceIds.begin(); i != mra->sliceIds.end(); i++) {
-        uint32_t sliceId = *i;
-        Cloner::SliceInfo *si = cloner->getSlice(f, sliceId);
-        Function *sliced = si->first;
-        sliced->print(outs());
+void SliceGenerator::dumpSlices() {
+    ModRefAnalysis::ModInfoToIdMap &modInfoToIdMap = mra->getModInfoToIdMap();
+    outs() << "dumping " << modInfoToIdMap.size() << " slices\n";
+
+    for (ModRefAnalysis::ModInfoToIdMap::iterator i = modInfoToIdMap.begin(); i != modInfoToIdMap.end(); i++) {
+        ModRefAnalysis::ModInfo modInfo = i->first;
+        uint32_t id = i->second;
+        dumpSlices(modInfo, id);
     }
 }
 
-void SliceGenerator::dumpSlices() {
-    for (std::set<Function *>::iterator i = cloner->reachable.begin(); i != cloner->reachable.end(); i++) {
+void SliceGenerator::dumpSlices(ModRefAnalysis::ModInfo &modInfo, uint32_t id) {
+    Function *f = modInfo.first;
+    set<Function *> reachable = cloner->getReachabilityMap()[f];
+
+    for (set<Function *>::iterator i = reachable.begin(); i != reachable.end(); i++) {
         Function *f = *i;
         if (f->isDeclaration()) {
             continue;
         }
 
-        dumpSlices(f);
+        dumpSlice(*i, id);
     }
+}
+
+void SliceGenerator::dumpSlice(Function *f, uint32_t sliceId) {
+    Cloner::SliceInfo *si = cloner->getSlice(f, sliceId);
+    Function *sliced = si->first;
+    sliced->print(outs());
 }
