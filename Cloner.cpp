@@ -29,13 +29,12 @@ Cloner::Cloner(llvm::Module *module, ReachabilityAnalysis *ra, ModRefAnalysis *m
 }
 
 void Cloner::run() {
-    ModRefAnalysis::ModInfoToIdMap &modInfoToIdMap = mra->getModInfoToIdMap();
+    ModRefAnalysis::SideEffects &sideEffects = mra->getSideEffects();
 
-    for (ModRefAnalysis::ModInfoToIdMap::iterator i = modInfoToIdMap.begin(); i != modInfoToIdMap.end(); i++) {
-        ModRefAnalysis::ModInfo modInfo = i->first;
-        uint32_t sliceId = i->second;
-
-        Function *f = modInfo.first;
+    for (ModRefAnalysis::SideEffects::iterator i = sideEffects.begin(); i != sideEffects.end(); i++) {
+        ModRefAnalysis::SideEffect &sideEffect = *i;
+        Function *f = sideEffect.f;
+        uint32_t sliceId = sideEffect.id;
 
         /* compute reachable functions only once */
         if (reachabilityMap.find(f) == reachabilityMap.end()) {
