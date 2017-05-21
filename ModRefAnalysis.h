@@ -5,6 +5,7 @@
 #include <iostream>
 #include <set>
 #include <map>
+#include <vector>
 
 #include <llvm/IR/Module.h>
 #include <llvm/IR/Instruction.h>
@@ -19,7 +20,7 @@ public:
     typedef std::set<llvm::Instruction *> InstructionSet;
 
     typedef std::map<llvm::Function *, PointsTo> ModPtsMap;
-    typedef std::map<llvm::Function *, InstructionSet> SideEffectsMap;
+    typedef std::map<llvm::Function *, InstructionSet> ModSetMap;
 
     typedef std::map<std::pair<llvm::Function *, NodeID>, InstructionSet> ObjToStoreMap;
     typedef std::map<NodeID, InstructionSet> ObjToLoadMap;
@@ -33,6 +34,22 @@ public:
     typedef std::map<ModInfo, uint32_t> ModInfoToIdMap;
     typedef std::map<uint32_t, ModInfo> IdToModInfoMap;
     typedef std::map<llvm::Function *, uint32_t> RetSliceIdMap;
+
+    typedef enum {
+        Modifier,
+        ReturnValue,
+    } SideEffectType;
+
+    typedef struct {
+        SideEffectType type;
+        /* TODO: remove this member */
+        llvm::Function *f;
+        uint32_t id;
+        /* TODO: use a union instead */
+        ModInfo modInfo;
+    } SideEffect;
+
+    typedef std::vector<SideEffect> SideEffects;
 
     ModRefAnalysis(
         llvm::Module *module,
@@ -50,15 +67,15 @@ public:
 
     ModInfoToStoreMap &getModInfoToStoreMap();
 
-    ModInfoToIdMap &getModInfoToIdMap();
+    SideEffects &getSideEffects();
 
-    bool hasRetSlice(llvm::Function *f);
+    ModInfoToIdMap &getModInfoToIdMap();
 
     uint32_t getRetSliceId(llvm::Function *f);
 
     void getApproximateAllocSite(llvm::Instruction *inst, AllocSite hint);
 
-    void dumpSideEffects();
+    void dumpModSetMap();
 
     void dumpLoadToStoreMap();
 
@@ -92,7 +109,7 @@ private:
 
     llvm::AliasAnalysis::Location getStoreLocation(llvm::StoreInst *inst);
 
-    void dumpSideEffects(llvm::Function *f, InstructionSet &sideEffects);
+    void dumpModSet(llvm::Function *f, InstructionSet &modSet);
 
     /* private members */
 
@@ -109,16 +126,18 @@ private:
     PointsTo refPts;
     ObjToLoadMap objToLoadMap;
 
-    SideEffectsMap sideEffectsMap;
+    ModSetMap modSetMap;
 
     /* TODO: no need to hold the store instructions */
     LoadToStoreMap loadToStoreMap;
 
     LoadToModInfoMap loadToModInfoMap;
     ModInfoToStoreMap modInfoToStoreMap;
+
     ModInfoToIdMap modInfoToIdMap;
-    IdToModInfoMap idToModInfoMap;
     RetSliceIdMap retSliceIdMap;
+
+    SideEffects sideEffects;
 };
 
 #endif
