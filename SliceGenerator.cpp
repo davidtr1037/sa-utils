@@ -14,16 +14,18 @@ using namespace std;
 using namespace llvm;
 
 void SliceGenerator::generate() {
-    ModRefAnalysis::ModInfoToIdMap &modInfoToIdMap = mra->getModInfoToIdMap();
+    ModRefAnalysis::SideEffects &sideEffects = mra->getSideEffects();
 
-    for (ModRefAnalysis::ModInfoToIdMap::iterator i = modInfoToIdMap.begin(); i != modInfoToIdMap.end(); i++) {
-        ModRefAnalysis::ModInfo modInfo = i->first;
-        uint32_t sliceId = i->second;
-        Function *f = modInfo.first;
+    for (ModRefAnalysis::SideEffects::iterator i = sideEffects.begin(); i != sideEffects.end(); i++) {
+        ModRefAnalysis::SideEffect &sideEffect = *i;
+
+        ModRefAnalysis::SideEffectType type = sideEffect.type;
+        Function *f = sideEffect.f;
+        uint32_t sliceId = sideEffect.id;
 
         /* set criterion functions */
         std::vector<std::string> criterions;
-        if (sliceId == mra->getRetSliceId(f)) {
+        if (type == ModRefAnalysis::ReturnValue) {
             criterions.push_back("ret");
         } else {
             std::set<std::string> &fnames = annotator->getAnnotatedNames(sliceId);
@@ -45,27 +47,25 @@ void SliceGenerator::generate() {
 }
 
 void SliceGenerator::dumpSlices() {
-    ModRefAnalysis::ModInfoToIdMap &modInfoToIdMap = mra->getModInfoToIdMap();
-    outs() << "dumping " << modInfoToIdMap.size() << " slices\n";
+    ModRefAnalysis::SideEffects &sideEffects = mra->getSideEffects();
 
-    for (ModRefAnalysis::ModInfoToIdMap::iterator i = modInfoToIdMap.begin(); i != modInfoToIdMap.end(); i++) {
-        ModRefAnalysis::ModInfo modInfo = i->first;
-        uint32_t id = i->second;
-        dumpSlices(modInfo, id);
+    for (ModRefAnalysis::SideEffects::iterator i = sideEffects.begin(); i != sideEffects.end(); i++) {
+        dumpSlices(*i);
     }
 }
 
-void SliceGenerator::dumpSlices(ModRefAnalysis::ModInfo &modInfo, uint32_t id) {
-    Function *f = modInfo.first;
-    set<Function *> reachable = cloner->getReachabilityMap()[f];
+void SliceGenerator::dumpSlices(ModRefAnalysis::SideEffect &sideEffect) {
+    Function *f = sideEffect.f;
+    uint32_t id = sideEffect.id;
 
+    set<Function *> reachable = cloner->getReachabilityMap()[f];
     for (set<Function *>::iterator i = reachable.begin(); i != reachable.end(); i++) {
         Function *f = *i;
         if (f->isDeclaration()) {
             continue;
         }
 
-        dumpSlice(*i, id);
+        dumpSlice(f, id);
     }
 }
 

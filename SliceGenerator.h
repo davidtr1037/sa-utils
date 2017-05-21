@@ -37,7 +37,7 @@ public:
 
 private:
 
-    void dumpSlices(ModRefAnalysis::ModInfo &modInfo, uint32_t id);
+    void dumpSlices(ModRefAnalysis::SideEffect &sideEffect);
 
     void dumpSlice(llvm::Function *f, uint32_t sliceId);
 
