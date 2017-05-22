@@ -21,4 +21,6 @@ make \
     all
 ```
 
-Note: We assume that LLVM was built with autoconf.
+Notes:
+* We assume that LLVM was built with autoconf.
+* The build will be moved to CMake.
