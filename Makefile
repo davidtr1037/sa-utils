@@ -30,7 +30,7 @@ EXTERNAL_LIBS=\
     $(DG_PATH)/build/src/libRD.so
 
 LDFLAGS=-L$(SVF_PATH)/Release+Asserts/lib -L$(DG_PATH)/build/src $(EXTERNAL_LIBS) $(LLVM_LIBS) $(LLVM_LDFLAGS)
-LIB_LDFLAGS=-L$(SVF_PATH)/Release+Asserts/lib -L$(DG_PATH)/buILD/SRC $(EXTERNAL_LIBS) $(LLVM_LIBS) $(LLVM_LDFLAGS)
+LIB_LDFLAGS=-L$(SVF_PATH)/Release+Asserts/lib -L$(DG_PATH)/build/src $(EXTERNAL_LIBS) $(LLVM_LIBS) $(LLVM_LDFLAGS)
 
 SOURCES=\
 		ReachabilityAnalysis.cpp \
