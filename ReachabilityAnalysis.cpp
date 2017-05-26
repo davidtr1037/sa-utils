@@ -152,9 +152,10 @@ void ReachabilityAnalysis::removeUnreachableFunctions() {
 }
 
 void ReachabilityAnalysis::dumpReachableFunctions() {
-    outs() << reachable.size() << " reachable functions:\n";
+    outs() << "### " << reachable.size() << " reachable functions ###\n";
     for (std::set<Function *>::iterator i = reachable.begin(); i != reachable.end(); i++) {
         Function *f = *i;
         outs() << "    " << f->getName() << "\n";
     }
+    outs() << "\n";
 }

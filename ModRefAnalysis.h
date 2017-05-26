@@ -79,9 +79,15 @@ public:
 
     void dumpLoadToStoreMap();
 
-    void dumpAllocSiteToStoreMap();
+    void dumpLoadToModInfoMap();
 
-    void dumpAllocSiteToIdMap();
+    void dumpModInfoToStoreMap();
+
+    void dumpModInfoToIdMap();
+
+    void dumpInst(llvm::Instruction *load, const char *prefix = "");
+    
+    void dumpModInfo(ModInfo &modInfo, const char *prefix = "");
 
 private:
 
@@ -109,13 +115,10 @@ private:
 
     llvm::AliasAnalysis::Location getStoreLocation(llvm::StoreInst *inst);
 
-    void dumpModSet(llvm::Function *f, InstructionSet &modSet);
-
     /* private members */
 
     llvm::Module *module;
     ReachabilityAnalysis *ra;
-    /* TODO: rename to pa (pointer analysis) */
     AAPass *aa;
 
     llvm::Function *entryFunction;
