@@ -71,6 +71,8 @@ public:
 
     ModInfoToIdMap &getModInfoToIdMap();
 
+    bool mayBlock(llvm::Instruction *load);
+
     uint32_t getRetSliceId(llvm::Function *f);
 
     void getApproximateAllocSite(llvm::Instruction *inst, AllocSite hint);
