@@ -33,7 +33,7 @@ void Cloner::run() {
 
     for (ModRefAnalysis::SideEffects::iterator i = sideEffects.begin(); i != sideEffects.end(); i++) {
         ModRefAnalysis::SideEffect &sideEffect = *i;
-        Function *f = sideEffect.f;
+        Function *f = sideEffect.getFunction();
         uint32_t sliceId = sideEffect.id;
 
         /* compute reachable functions only once */

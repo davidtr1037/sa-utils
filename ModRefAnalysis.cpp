@@ -256,8 +256,10 @@ void ModRefAnalysis::computeModInfoToStoreMap() {
             retSliceIdMap[f] = retSliceId;
             SideEffect sideEffect = {
                 .type = ReturnValue,
-                .f = f,
-                .id = retSliceId
+                .id = retSliceId,
+                .info = {
+                    .f = f
+                }
             };
             sideEffects.push_back(sideEffect);
         }
@@ -281,9 +283,10 @@ void ModRefAnalysis::computeModInfoToStoreMap() {
                     modInfoToIdMap[modInfo] = modSliceId;
                     SideEffect sideEffect = {
                         .type = Modifier,
-                        .f = f,
                         .id = modSliceId,
-                        .modInfo = modInfo
+                        .info = {
+                            .modInfo = modInfo
+                        }
                     };
                     sideEffects.push_back(sideEffect);
                 }
