@@ -75,6 +75,11 @@ ModRefAnalysis::ModInfoToStoreMap &ModRefAnalysis::getModInfoToStoreMap() {
     return modInfoToStoreMap;
 }
 
+bool ModRefAnalysis::mayBlock(Instruction *load) {
+    LoadToStoreMap::iterator i = loadToStoreMap.find(load);
+    return i != loadToStoreMap.end();
+}
+
 ModRefAnalysis::SideEffects &ModRefAnalysis::getSideEffects() {
     return sideEffects;
 }
