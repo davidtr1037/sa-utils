@@ -66,8 +66,9 @@ void ModRefAnalysis::run() {
     /* debug */
     dumpModSetMap();
     dumpLoadToStoreMap();
-    dumpAllocSiteToStoreMap();
-    dumpAllocSiteToIdMap();
+    dumpLoadToModInfoMap();
+    dumpModInfoToStoreMap();
+    dumpModInfoToIdMap();
 }
 
 ModRefAnalysis::ModInfoToStoreMap &ModRefAnalysis::getModInfoToStoreMap() {
@@ -358,86 +359,98 @@ void ModRefAnalysis::getApproximateAllocSite(Instruction *inst, AllocSite hint) 
 }
 
 void ModRefAnalysis::dumpModSetMap() {
-    outs() << "--- ModSetMap ---\n";
+    outs() << "### ModSetMap ###\n";
 
     for (ModSetMap::iterator i = modSetMap.begin(); i != modSetMap.end(); i++) {
         Function *f = i->first;
         InstructionSet &modSet = i->second;
-        dumpModSet(f, modSet);
+
+        for (InstructionSet::iterator j = modSet.begin(); j != modSet.end(); j++) {
+            Instruction *inst = *j;
+            dumpInst(inst);
+        }
     }
     outs() << "\n";
 }
 
-void ModRefAnalysis::dumpModSet(Function *f, InstructionSet &modSet) {
-    for (std::set<Instruction *>::iterator i = modSet.begin(); i != modSet.end(); i++) {
-        Instruction *inst = *i;
-        outs() <<  "[" << f->getName() << "]";
-        inst->print(outs());
-        outs() << "\n";
-    }
-}
-
 void ModRefAnalysis::dumpLoadToStoreMap() {
-    outs() << "--- LoadToStoreMap ---\n";
+    outs() << "### LoadToStoreMap ###\n";
 
     for (LoadToStoreMap::iterator i = loadToStoreMap.begin(); i != loadToStoreMap.end(); i++) {
         Instruction *load = i->first;
         set<Instruction *> stores = i->second;
 
-        outs() << "load: " << "[" << load->getParent()->getParent()->getName() << "]";
-        load->print(outs()); outs() << "\n";
-
+        dumpInst(load);
         for (set<Instruction *>::iterator j = stores.begin(); j != stores.end(); j++) {
-            Instruction *store_inst = *j;
-            outs() << "-- store: " << "[" << store_inst->getParent()->getParent()->getName() << "]";
-            store_inst->print(outs()); outs() << "\n";
+            Instruction *store = *j;
+
+            dumpInst(store, "\t");
         }
     }
     outs() << "\n";
 }
 
-void ModRefAnalysis::dumpAllocSiteToStoreMap() {
-    outs() << "--- ModInfoToStoreMap ---\n";
+void ModRefAnalysis::dumpLoadToModInfoMap() {
+    outs() << "### LoadToModInfoMap ###\n";
+
+    for (LoadToModInfoMap::iterator i = loadToModInfoMap.begin(); i != loadToModInfoMap.end(); i++) {
+        Instruction *load = i->first;
+        set<ModInfo> &modInfos = i->second;
+
+        dumpInst(load);
+        for (set<ModInfo>::iterator j = modInfos.begin(); j != modInfos.end(); j++) {
+            ModInfo modInfo = *j;
+            dumpModInfo(modInfo, "\t");
+        }
+    }
+    outs() << "\n";
+}
+
+void ModRefAnalysis::dumpModInfoToStoreMap() {
+    outs() << "### ModInfoToStoreMap ###\n";
 
     for (ModInfoToStoreMap::iterator i = modInfoToStoreMap.begin(); i != modInfoToStoreMap.end(); i++) {
         ModInfo modInfo = i->first;
         InstructionSet &stores = i->second;
 
-        Function *f = modInfo.first;
-        AllocSite allocSite = modInfo.second;
-
-        const Value *value = allocSite.first;
-        uint64_t offset = allocSite.second;
-
-        outs() << "- function: " << f->getName() << "\n";
-        outs() << "- allocation site: "; value->print(outs()); outs() << "\n";
-        outs() << "- offset: " << offset << "\n";
-
+        dumpModInfo(modInfo);
         for (InstructionSet::iterator j = stores.begin(); j != stores.end(); j++) {
             Instruction *store = *j;
-            outs() << "-- store: "; store->print(outs()); outs() << "\n";
+            dumpInst(store, "\t");
         }
     }
     outs() << "\n";
 }
 
-void ModRefAnalysis::dumpAllocSiteToIdMap() {
-    outs() << "--- ModInfoToIdMap ---\n";
+void ModRefAnalysis::dumpModInfoToIdMap() {
+    outs() << "### ModInfoToIdMap ###\n";
 
     for (ModInfoToIdMap::iterator i = modInfoToIdMap.begin(); i != modInfoToIdMap.end(); i++) {
         ModInfo modInfo = i->first;
         uint32_t id = i->second;
-
-        Function *f = modInfo.first;
-        AllocSite allocSite = modInfo.second;
-
-        const Value *value = allocSite.first;
-        uint64_t offset = allocSite.second;
-
-        outs() << "- function: " << f->getName() << "\n";
-        outs() << "- allocation site: "; value->print(outs()); outs() << "\n";
-        outs() << "- offset: " << offset << "\n";
-        outs() << "- id: " << id << "\n";
+        
+        dumpModInfo(modInfo);
+        outs() << "id: " << id << "\n";
     }
     outs() << "\n";
+}
+
+void ModRefAnalysis::dumpInst(Instruction *inst, const char *prefix) {
+    Function *f = inst->getParent()->getParent();
+
+    outs() << prefix << "[" << f->getName() << "]";
+    inst->print(outs()); 
+    outs() << "\n";
+}
+
+void ModRefAnalysis::dumpModInfo(ModInfo &modInfo, const char *prefix) {
+    Function *f = modInfo.first;
+    AllocSite allocSite = modInfo.second;
+
+    const Value *value = allocSite.first;
+    uint64_t offset = allocSite.second;
+
+    outs() << prefix << "function: " << f->getName() << "\n";
+    outs() << prefix << "allocation site: "; value->print(outs()); outs() << "\n";
+    outs() << prefix << "offset: " << offset << "\n";
 }
