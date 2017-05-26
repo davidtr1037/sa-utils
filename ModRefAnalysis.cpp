@@ -325,38 +325,35 @@ AliasAnalysis::Location ModRefAnalysis::getStoreLocation(StoreInst *inst) {
     return AliasAnalysis::Location(addr);
 }
 
-void ModRefAnalysis::getApproximateAllocSite(Instruction *inst, AllocSite hint) {
+/* TODO: validate that a load can't have two ModInfo's with the same allocation site */
+void ModRefAnalysis::getApproximateModInfos(Instruction *inst, AllocSite hint, std::set<ModInfo> &result) {
     assert(inst->getOpcode() == Instruction::Load);
 
     LoadToModInfoMap::iterator entry = loadToModInfoMap.find(inst);
     if (entry == loadToModInfoMap.end()) {
-        /* this should not happen */
+        /* TODO: this should not happen */
         assert(false);
     }
 
     std::set<ModInfo> &modifiers = entry->second;
-    std::set<ModInfo> approximateModifiers;
 
-    /* TODO: choose the most precise ModInfo for each function */
     for (std::set<ModInfo>::iterator i = modifiers.begin(); i != modifiers.end(); i++) {
         ModInfo modInfo = *i;
         AllocSite allocSite = modInfo.second;
-        if (allocSite == hint) {
-            return;
-        }
 
+        /* compare only the allocation sites (values) */
         if (allocSite.first == hint.first) {
-            approximateModifiers.insert(modInfo);
+            result.insert(modInfo);
         }
     }
 
-    if (approximateModifiers.empty()) {
+    if (result.empty()) {
         /* TODO: something went wrong with the static analysis... */
         assert(false);
     }
 
     /* TODO: this assumption does not hold if we have a buffer in a struct */
-    if (approximateModifiers.size() > 1) {
+    if (result.size() > 1) {
         assert(false);
     }
 
