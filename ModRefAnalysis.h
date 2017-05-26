@@ -42,11 +42,22 @@ public:
 
     typedef struct {
         SideEffectType type;
-        /* TODO: remove this member */
-        llvm::Function *f;
         uint32_t id;
-        /* TODO: use a union instead */
-        ModInfo modInfo;
+        union {
+            ModInfo modInfo;
+            llvm::Function *f;
+        } info;
+
+        llvm::Function *getFunction() {
+            if (type == Modifier) {
+                return info.modInfo.first;
+            }
+            if (type == ReturnValue) {
+                return info.f;
+            }
+            assert(false);
+        }
+
     } SideEffect;
 
     typedef std::vector<SideEffect> SideEffects;

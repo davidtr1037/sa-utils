@@ -20,7 +20,7 @@ void SliceGenerator::generate() {
         ModRefAnalysis::SideEffect &sideEffect = *i;
 
         ModRefAnalysis::SideEffectType type = sideEffect.type;
-        Function *f = sideEffect.f;
+        Function *f = sideEffect.getFunction();
         uint32_t sliceId = sideEffect.id;
 
         /* set criterion functions */
@@ -55,7 +55,7 @@ void SliceGenerator::dumpSlices() {
 }
 
 void SliceGenerator::dumpSlices(ModRefAnalysis::SideEffect &sideEffect) {
-    Function *f = sideEffect.f;
+    Function *f = sideEffect.getFunction();
     uint32_t id = sideEffect.id;
 
     set<Function *> reachable = cloner->getReachabilityMap()[f];
