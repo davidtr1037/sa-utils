@@ -75,7 +75,7 @@ public:
 
     uint32_t getRetSliceId(llvm::Function *f);
 
-    void getApproximateAllocSite(llvm::Instruction *inst, AllocSite hint);
+    void getApproximateModInfos(llvm::Instruction *inst, AllocSite hint, std::set<ModInfo> &result);
 
     void dumpModSetMap();
 
