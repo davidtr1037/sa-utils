@@ -113,9 +113,9 @@ void ModRefAnalysis::collectModInfo(Function *f) {
         for (inst_iterator iter = inst_begin(curr); iter != inst_end(curr); iter++) {
             Instruction *inst = &*iter;
             if (inst->getOpcode() == Instruction::Call) {
-                CallInst *call_inst = dyn_cast<CallInst>(inst);
+                CallInst *callInst = dyn_cast<CallInst>(inst);
                 std::set<Function *> targets;
-                ra->getCallTargets(call_inst, targets); 
+                ra->getCallTargets(callInst, targets);
                 for (std::set<Function *>::iterator i = targets.begin(); i != targets.end(); i++) {
                     Function *target = *i;
                     if (target->isDeclaration()) {
@@ -135,18 +135,18 @@ void ModRefAnalysis::collectModInfo(Function *f) {
     }
 }
 
-void ModRefAnalysis::addStore(Function *f, Instruction *store_inst) {
-    AliasAnalysis::Location store_location = getStoreLocation(dyn_cast<StoreInst>(store_inst));
-    NodeID id = aa->getPTA()->getPAG()->getValueNode(store_location.Ptr);
+void ModRefAnalysis::addStore(Function *f, Instruction *store) {
+    AliasAnalysis::Location storeLocation = getStoreLocation(dyn_cast<StoreInst>(store));
+    NodeID id = aa->getPTA()->getPAG()->getValueNode(storeLocation.Ptr);
     PointsTo &pts = aa->getPTA()->getPts(id);
 
     PointsTo &modPts = modPtsMap[f];
     modPts |= pts;
 
     for (PointsTo::iterator i = pts.begin(); i != pts.end(); ++i) {
-        NodeID node_id = *i;
-        pair<Function *, NodeID> k = make_pair(f, node_id);
-        objToStoreMap[k].insert(store_inst);
+        NodeID nodeId = *i;
+        pair<Function *, NodeID> k = make_pair(f, nodeId);
+        objToStoreMap[k].insert(store);
     }
 }
 
@@ -168,18 +168,18 @@ void ModRefAnalysis::collectRefInfo(Function *entry) {
             /* process only the instructions after the call */
             if (!ignore) {
                 if (inst->getOpcode() == Instruction::Call) {
-                    CallInst *call_inst = dyn_cast<CallInst>(inst);
+                    CallInst *callInst = dyn_cast<CallInst>(inst);
                     std::set<Function *> targets;
-                    ra->getCallTargets(call_inst, targets); 
+                    ra->getCallTargets(callInst, targets);
                     for (std::set<Function *>::iterator i = targets.begin(); i != targets.end(); i++) {
                         Function *target = *i;
                         if (target->isDeclaration()) {
                             continue;
                         }
 
-                        BasicBlock *target_bb = target->begin();
-                        if (visited.find(target_bb) == visited.end()) {
-                            stack.push(target_bb);
+                        BasicBlock *targetBB = target->begin();
+                        if (visited.find(targetBB) == visited.end()) {
+                            stack.push(targetBB);
                         }
                     }
                 }
@@ -202,15 +202,15 @@ void ModRefAnalysis::collectRefInfo(Function *entry) {
     }
 }
 
-void ModRefAnalysis::addLoad(Instruction *load_inst) {
-    AliasAnalysis::Location load_location = getLoadLocation(dyn_cast<LoadInst>(load_inst));
-    NodeID id = aa->getPTA()->getPAG()->getValueNode(load_location.Ptr);
+void ModRefAnalysis::addLoad(Instruction *load) {
+    AliasAnalysis::Location loadLocation = getLoadLocation(dyn_cast<LoadInst>(load));
+    NodeID id = aa->getPTA()->getPAG()->getValueNode(loadLocation.Ptr);
     PointsTo &pts = aa->getPTA()->getPts(id);
 
     refPts |= pts;
     for (PointsTo::iterator i = pts.begin(); i != pts.end(); ++i) {
-        NodeID node_id = *i;
-        objToLoadMap[node_id].insert(load_inst);
+        NodeID nodeId = *i;
+        objToLoadMap[nodeId].insert(load);
     }
 }
 
@@ -223,22 +223,25 @@ void ModRefAnalysis::computeModRefInfo() {
         InstructionSet &modSet = modSetMap[f];
 
         for (PointsTo::iterator ni = pts.begin(); ni != pts.end(); ++ni) {
-            NodeID node_id = *ni;
-            pair<Function *, NodeID> k = make_pair(f, node_id);
+            NodeID nodeId = *ni;
+
+            /* update modifies-set */
+            pair<Function *, NodeID> k = make_pair(f, nodeId);
             set<Instruction *> stores = objToStoreMap[k];
             modSet.insert(stores.begin(), stores.end());
 
-            set<Instruction *> load_insts = objToLoadMap[node_id];
-            for (set<Instruction *>::iterator i = load_insts.begin(); i != load_insts.end(); i++) {
-                Instruction *load_inst = *i;
+            set<Instruction *> loads = objToLoadMap[nodeId];
+            AllocSite allocSite = getAllocSite(nodeId);
+
+            for (set<Instruction *>::iterator i = loads.begin(); i != loads.end(); i++) {
+                Instruction *load = *i;
 
                 /* update with store instructions */
-                loadToStoreMap[load_inst].insert(stores.begin(), stores.end());
+                loadToStoreMap[load].insert(stores.begin(), stores.end());
 
                 /* update with allocation site */
-                AllocSite allocSite = getAllocSite(node_id);
                 ModInfo modInfo = make_pair(f, allocSite);
-                loadToModInfoMap[load_inst].insert(modInfo);
+                loadToModInfoMap[load].insert(modInfo);
             }
         }
     }
@@ -265,8 +268,8 @@ void ModRefAnalysis::computeModInfoToStoreMap() {
         }
 
         for (InstructionSet::iterator i = modSet.begin(); i != modSet.end(); i++) {
-            Instruction *inst = *i;
-            AliasAnalysis::Location storeLocation = getStoreLocation(dyn_cast<StoreInst>(inst));
+            Instruction *store = *i;
+            AliasAnalysis::Location storeLocation = getStoreLocation(dyn_cast<StoreInst>(store));
             NodeID id = aa->getPTA()->getPAG()->getValueNode(storeLocation.Ptr);
             PointsTo &pts = aa->getPTA()->getPts(id);
 
@@ -276,7 +279,7 @@ void ModRefAnalysis::computeModInfoToStoreMap() {
                 /* update store instructions */
                 AllocSite allocSite = getAllocSite(nodeId);
                 ModInfo modInfo = make_pair(f, allocSite);
-                modInfoToStoreMap[modInfo].insert(inst);
+                modInfoToStoreMap[modInfo].insert(store);
 
                 if (modInfoToIdMap.find(modInfo) == modInfoToIdMap.end()) {
                     uint32_t modSliceId = sliceId++;

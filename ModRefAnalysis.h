@@ -110,11 +110,11 @@ private:
 
     void collectModInfo(llvm::Function *f);
 
-    void addStore(llvm::Function *f, llvm::Instruction *store_inst);
+    void addStore(llvm::Function *f, llvm::Instruction *store);
 
     void collectRefInfo(llvm::Function *entry);
 
-    void addLoad(llvm::Instruction *load_inst);
+    void addLoad(llvm::Instruction *load);
 
     void computeModRefInfo();
 
