@@ -358,11 +358,6 @@ void ModRefAnalysis::getApproximateModInfos(Instruction *inst, AllocSite hint, s
         assert(false);
     }
 
-    /* TODO: this assumption does not hold if we have a buffer in a struct */
-    if (result.size() > 1) {
-        assert(false);
-    }
-
     return;
 }
 
