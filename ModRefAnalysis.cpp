@@ -88,13 +88,14 @@ ModRefAnalysis::ModInfoToIdMap &ModRefAnalysis::getModInfoToIdMap() {
     return modInfoToIdMap;
 }
 
-uint32_t ModRefAnalysis::getRetSliceId(llvm::Function *f) {
+bool ModRefAnalysis::getRetSliceId(llvm::Function *f, uint32_t &id) {
     RetSliceIdMap::iterator i = retSliceIdMap.find(f);
     if (i == retSliceIdMap.end()) {
-        assert(false);
+        return false;
     }
 
-    return i->second;
+    id = i->second;
+    return true;
 }
 
 void ModRefAnalysis::collectModInfo(Function *f) {
