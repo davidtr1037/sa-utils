@@ -317,7 +317,7 @@ Slicer::Slicer(llvm::Module *mod, uint32_t o, AAPass *svfaa, Cloner *cloner,
     entryFunction(entryFunction),
     criterions(criterions),
     /* we need the nodes of the whole program */
-    PTA(new LLVMPointerAnalysis(mod, pta_field_sensitivie, entryFunction)),
+    PTA(new LLVMPointerAnalysis(mod, pta_field_sensitivie, "main")),
     RD(new LLVMReachingDefinitions(mod, PTA.get(), rd_strong_update_unknown, undefined_are_pure, ~((uint32_t)(0)), entryFunction)) 
 {
     assert(mod && "Need module");
