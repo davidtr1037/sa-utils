@@ -56,25 +56,20 @@ int main(int argc, char *argv[]) {
     }
 
     ReachabilityAnalysis *ra = new ReachabilityAnalysis(module);
-    ra->run(); 
-
     AAPass *aa = new AAPass();
     aa->setPAType(PointerAnalysis::Andersen_WPA);
+    ModRefAnalysis *mra = new ModRefAnalysis(module, ra, aa, "main", targets);
+    Annotator *annotator = new Annotator(module, mra);
+    Cloner *cloner = new Cloner(module, ra, mra);
+    SliceGenerator *sg = new SliceGenerator(module, aa, mra, annotator, cloner);
 
+    ra->run();
     legacy::PassManager pm;
     pm.add(aa);
     pm.run(*module);
-
-    ModRefAnalysis *mra = new ModRefAnalysis(module, ra, aa, "main", targets);
     mra->run();
-
-    Annotator *annotator = new Annotator(module, mra);
     annotator->annotate();
-
-    Cloner *cloner = new Cloner(module, ra, mra);
     cloner->run();
-
-    SliceGenerator *sg = new SliceGenerator(module, aa, mra, annotator, cloner);
     sg->generate();
     sg->dumpSlices();
 
