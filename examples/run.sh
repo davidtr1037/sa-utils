@@ -1,7 +1,7 @@
 #!/bin/bash
 
 KLEE=~/tau/slicing/klee_build/bin/klee
-DG_LIB_DIR=~/tau/dg/build/src/
+DG_LIB_DIR=~/tau/slicing/dg/build/src/
 
 function run_klee {
     file=$1
