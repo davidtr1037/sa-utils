@@ -6,10 +6,10 @@ $(call check_var,LLVM_OBJ)
 $(call check_var,SVF_PATH)
 $(call check_var,DG_PATH)
 
-LLVM_CONFIG=$(LLVM_OBJ)/Release+Asserts/bin/llvm-config
+LLVM_CONFIG=$(LLVM_OBJ)/bin/llvm-config
 LLVM_LIBS=$(shell $(LLVM_CONFIG) --libs)
 LLVM_LDFLAGS=$(shell $(LLVM_CONFIG) --ldflags)
-CXX=g++ -m32
+CXX=g++
 
 INCLUDES=\
     -I$(LLVM_SRC)/include/ \
@@ -19,18 +19,18 @@ INCLUDES=\
     -I$(DG_PATH)/tools \
     -I.
 
-CXXFLAGS=$(INCLUDES) -DHAVE_LLVM -DENABLE_CFG -D__STDC_LIMIT_MACROS -D__STDC_CONSTANT_MACROS -std=gnu++11 -g -fno-rtti
+CXXFLAGS=$(INCLUDES) -DHAVE_LLVM -DENABLE_CFG -D__STDC_LIMIT_MACROS -D__STDC_CONSTANT_MACROS -std=gnu++11 -g -fno-rtti -fPIC
 
 EXTERNAL_LIBS=\
-    $(SVF_PATH)/Release+Asserts/lib/libwpa.so \
-    $(SVF_PATH)/Release+Asserts/lib/libmssa.so \
+    $(SVF_PATH)/build/lib/Svf.so \
+    $(SVF_PATH)/build/lib/CUDD/Cudd.so \
     $(DG_PATH)/build/src/libLLVMdg.so \
     $(DG_PATH)/build/src/libLLVMpta.so \
     $(DG_PATH)/build/src/libPTA.so \
     $(DG_PATH)/build/src/libRD.so
 
-LDFLAGS=-L$(SVF_PATH)/Release+Asserts/lib -L$(DG_PATH)/build/src $(EXTERNAL_LIBS) $(LLVM_LIBS) $(LLVM_LDFLAGS)
-LIB_LDFLAGS=-L$(SVF_PATH)/Release+Asserts/lib -L$(DG_PATH)/build/src $(EXTERNAL_LIBS) $(LLVM_LIBS) $(LLVM_LDFLAGS)
+
+LDFLAGS=-L$(SVF_PATH)/build/lib -L$(SVF_PATH)/build/lib/CUDD -L$(DG_PATH)/build/src $(EXTERNAL_LIBS) $(LLVM_LIBS) $(LLVM_LDFLAGS)
 
 SOURCES=\
 		ReachabilityAnalysis.cpp \
@@ -55,7 +55,7 @@ $(TARGET): $(TARGET_DEPS)
 	$(CXX) $^ -o $@ $(LDFLAGS) 
 
 $(LIB_TARGET): $(LIB_TARGET_DEPS)
-	$(CXX) -shared $^ -o $@ $(LIB_LDFLAGS) 
+	$(CXX) -shared $^ -o $@ $(LDFLAGS)
 
 all: $(TARGET) $(LIB_TARGET)
 
