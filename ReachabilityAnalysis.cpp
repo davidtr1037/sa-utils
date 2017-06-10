@@ -134,6 +134,7 @@ void ReachabilityAnalysis::getCallTargets(CallInst *call_inst, std::set<Function
     }
 }
 
+/* TODO: handle klee_* functions */
 void ReachabilityAnalysis::removeUnreachableFunctions() {
     std::set<Function *> unreachable;
 

@@ -32,9 +32,8 @@ void Cloner::run() {
     ModRefAnalysis::SideEffects &sideEffects = mra->getSideEffects();
 
     for (ModRefAnalysis::SideEffects::iterator i = sideEffects.begin(); i != sideEffects.end(); i++) {
-        ModRefAnalysis::SideEffect &sideEffect = *i;
-        Function *f = sideEffect.getFunction();
-        uint32_t sliceId = sideEffect.id;
+        Function *f = i->getFunction();
+        uint32_t sliceId = i->id;
 
         /* compute reachable functions only once */
         if (reachabilityMap.find(f) == reachabilityMap.end()) {
@@ -62,7 +61,7 @@ void Cloner::cloneFunction(Function *f, uint32_t sliceId) {
     Function *cloned = CloneFunction(f, *vmap, true);
 
     /* set function name */
-    string clonedName = string(f->getName().data()) + string("_clone_") + to_string(sliceId);
+    string clonedName = f->getName().str() + string("_clone_") + to_string(sliceId);
     cloned->setName(StringRef(clonedName));
 
     /* update map */
@@ -80,6 +79,12 @@ Cloner::ValueTranslationMap *Cloner::buildReversedMap(ValueToValueMapTy *vmap) {
         Value *value = (Value *)(i->first);
         WeakVH &wvh = i->second;
         Value *mappedValue  = &*wvh;
+
+        /* map only instructions */
+        if (!dyn_cast<Instruction>(value)) {
+            continue;
+        }
+
         map->insert(make_pair(mappedValue, value));
     }
 
@@ -118,6 +123,7 @@ Cloner::ValueTranslationMap *Cloner::getCloneInfo(llvm::Function *cloned) {
     return i->second;
 }
 
+/* translate a cloned value to it's original one */
 Value *Cloner::translateValue(Value *value) {
     Instruction *inst = dyn_cast<Instruction>(value);
     if (!inst) {
