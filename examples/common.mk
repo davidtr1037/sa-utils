@@ -1,17 +1,21 @@
 LLVM_OBJ=/home/david/tau/llvm-3.4.obj
-CLANG=$(LLVM_OBJ)/bin/clang
-OPT=$(LLVM_OBJ)/bin/opt
-LLVM_DIS=$(LLVM_OBJ)/bin/llvm-dis
-LLVM_LINK=$(LLVM_OBJ)/bin/llvm-link
+LLVM_BIN_DIR=$(LLVM_OBJ)/bin
+CLANG=$(LLVM_BIN_DIR)/clang
+OPT=$(LLVM_BIN_DIR)/opt
+LLVM_DIS=$(LLVM_BIN_DIR)/llvm-dis
+LLVM_LINK=$(LLVM_BIN_DIR)/llvm-link
 KLEE_PATH=/home/david/tau/klee/klee
 
 SOURCES=$(shell ls *.c)
-TARGETS=$(patsubst %.c,%.bc,$(SOURCES))
 
-all: $(TARGETS)
+TARGET=final.bc
+all: $(TARGET)
 
 %.bc: %.c
 	$(CLANG) -c -g -emit-llvm -I$(KLEE_PATH)/include $< -o $@
+
+$(TARGET): $(patsubst %.c,%.bc,$(SOURCES))
+	$(LLVM_LINK) $^ -o $@
 	$(OPT) -mem2reg $@ -o $@
 	$(LLVM_DIS) $@
 

@@ -1,13 +1,13 @@
 #!/bin/bash
 
 KLEE=~/tau/slicing/klee_build/bin/klee
-DG_LIB_DIR=~/tau/slicing/dg/build/src/
+LIBS_PATH=~/tau/slicing/SVF/build/lib:~/tau/slicing/SVF/build/lib/CUDD:~/tau/slicing/dg/build/src
 
 function run_klee {
     file=$1
     slice=$2
     search=$3
-    LD_LIBRARY_PATH=${DG_LIB_DIR} ${KLEE} -libc=klee -search=${search} -slice=${slice} ${file} 1>/dev/null 2>/dev/null
+    LD_LIBRARY_PATH=${LIBS_PATH} ${KLEE} -libc=klee -search=${search} -slice=${slice} ${file} 1>/dev/null 2>/dev/null
     if [ $? != 0 ]; then
         echo "failed: ${file}"
         exit 1
