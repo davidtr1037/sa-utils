@@ -440,6 +440,7 @@ bool Slicer::mark()
 
     // do not slice __VERIFIER_assume at all
     // FIXME: do this optional
+    /* TODO: add klee_* functions */
     slicer.keepFunctionUntouched("__VERIFIER_assume");
     slicer.keepFunctionUntouched("__VERIFIER_exit");
     //slice_id = 1; //0xdead;
@@ -506,6 +507,7 @@ bool Slicer::slice()
     return true;
 }
 
+/* TODO: may collide with the reachability analysis? */
 void Slicer::remove_unused_from_module_rec()
 {
     bool fixpoint;
