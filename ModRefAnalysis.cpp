@@ -403,7 +403,7 @@ void ModRefAnalysis::dumpLoadToModInfoMap() {
 
         dumpInst(load);
         for (set<ModInfo>::iterator j = modInfos.begin(); j != modInfos.end(); j++) {
-            ModInfo modInfo = *j;
+            const ModInfo &modInfo = *j;
             dumpModInfo(modInfo, "\t");
         }
     }
@@ -414,7 +414,7 @@ void ModRefAnalysis::dumpModInfoToStoreMap() {
     outs() << "### ModInfoToStoreMap ###\n";
 
     for (ModInfoToStoreMap::iterator i = modInfoToStoreMap.begin(); i != modInfoToStoreMap.end(); i++) {
-        ModInfo modInfo = i->first;
+        const ModInfo &modInfo = i->first;
         InstructionSet &stores = i->second;
 
         dumpModInfo(modInfo);
@@ -430,7 +430,7 @@ void ModRefAnalysis::dumpModInfoToIdMap() {
     outs() << "### ModInfoToIdMap ###\n";
 
     for (ModInfoToIdMap::iterator i = modInfoToIdMap.begin(); i != modInfoToIdMap.end(); i++) {
-        ModInfo modInfo = i->first;
+        const ModInfo &modInfo = i->first;
         uint32_t id = i->second;
         
         dumpModInfo(modInfo);
@@ -447,7 +447,7 @@ void ModRefAnalysis::dumpInst(Instruction *inst, const char *prefix) {
     outs() << "\n";
 }
 
-void ModRefAnalysis::dumpModInfo(ModInfo &modInfo, const char *prefix) {
+void ModRefAnalysis::dumpModInfo(const ModInfo &modInfo, const char *prefix) {
     Function *f = modInfo.first;
     AllocSite allocSite = modInfo.second;
 

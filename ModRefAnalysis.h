@@ -100,7 +100,7 @@ public:
 
     void dumpInst(llvm::Instruction *load, const char *prefix = "");
     
-    void dumpModInfo(ModInfo &modInfo, const char *prefix = "");
+    void dumpModInfo(const ModInfo &modInfo, const char *prefix = "");
 
 private:
 
