@@ -19,7 +19,7 @@ void target(char buf[SIZE], size_t size) {
     }
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[], char *envp[]) {
     char buf[SIZE];
 
     target(buf, sizeof(buf));

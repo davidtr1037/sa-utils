@@ -14,7 +14,8 @@ void insert_list(int k){
     head = l;
 }
 
-int main(void){
+int main(int argc, char *argv[], char *envp[])
+{
     mlist *temp;
 
     insert_list(2);

@@ -36,7 +36,7 @@ void parser_parse_name(parser_t *parser) {
     }
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[], char *envp[]) {
     parser_t parser;
     char buf[2];
 

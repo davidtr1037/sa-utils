@@ -6,7 +6,7 @@ void foo(int *a)
 	*a = 8;
 }
 
-int main(void)
+int main(int argc, char *argv[], char *envp[])
 {
 	int a[2] = {0,1};
 	foo(a);

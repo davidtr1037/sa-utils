@@ -12,7 +12,7 @@ void f(object_t *o) {
     o->y = 0;
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[], char *envp[]) {
     object_t o;
     int k;
 

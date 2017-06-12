@@ -84,7 +84,7 @@ void parser_parse(parser_t *parser) {
     assert(false);
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[], char *envp[]) {
     parser_t parser;
     char buf[8];
 

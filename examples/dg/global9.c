@@ -14,7 +14,7 @@ void foo(int *(f)(void), int **result)
 	*result = f();
 }
 
-int main(void)
+int main(int argc, char *argv[], char *envp[])
 {
 	int *p;
 	foo(setglob, &p);

@@ -19,7 +19,7 @@ void call(void (**funcarray)(void), int idx)
 	funcarray[idx]();
 }
 
-int main(void)
+int main(int argc, char *argv[], char *envp[])
 {
 	call(funcarray, 1);
 	assert(glob == 13);

@@ -62,7 +62,7 @@ void run(char *buf, size_t buf_size) {
     check_token(buf, token_size);
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[], char *envp[]) {
     char buf[4];
 
     klee_make_symbolic(&buf, sizeof(buf), "buf");
