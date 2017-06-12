@@ -28,15 +28,9 @@ ModRefAnalysis::ModRefAnalysis(
     std::string entry,
     std::vector<std::string> targets
 ) :
-    module(module), ra(ra), aa(aa)
+    module(module), ra(ra), aa(aa), entry(entry), targets(targets)
 {
-    entryFunction = module->getFunction(entry);
-    assert(entryFunction);
-    for (vector<string>::iterator i = targets.begin(); i != targets.end(); i++) {
-        Function *f = module->getFunction(*i);
-        assert(f);
-        targetFunctions.push_back(f);
-    }
+
 }
 
 Function *ModRefAnalysis::getEntry() {
@@ -48,6 +42,23 @@ vector<Function *> ModRefAnalysis::getTargets() {
 }
 
 void ModRefAnalysis::run() {
+    /* validation */
+    entryFunction = module->getFunction(entry);
+    if (!entryFunction) {
+        errs() << "entry function '" << entry << "' is not found (or unreachable)\n";
+        assert(false);
+    }
+    for (vector<string>::iterator i = targets.begin(); i != targets.end(); i++) {
+        string name = *i;
+        Function *f = module->getFunction(name);
+        if (!f) {
+            /* TODO: just ignore this? (warning) */
+            errs() << "function '" << name << "' is not found (or unreachable)\n";
+            assert(false);
+        }
+        targetFunctions.push_back(f);
+    }
+
     /* collect mod information for each target function */
     for (vector<Function *>::iterator i = targetFunctions.begin(); i != targetFunctions.end(); i++) {
         Function *f = *i;

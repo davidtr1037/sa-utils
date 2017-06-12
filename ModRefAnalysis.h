@@ -134,6 +134,8 @@ private:
     ReachabilityAnalysis *ra;
     AAPass *aa;
 
+    std::string entry;
+    std::vector<std::string> targets;
     llvm::Function *entryFunction;
     std::vector<llvm::Function *> targetFunctions;
 
