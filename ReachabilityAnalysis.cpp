@@ -8,8 +8,8 @@
 #include <llvm/IR/BasicBlock.h>
 #include <llvm/IR/Instruction.h>
 #include <llvm/IR/Instructions.h>
-#include <llvm/Support/InstIterator.h>
 #include <llvm/IR/Constants.h>
+#include <llvm/Support/InstIterator.h>
 #include <llvm/Support/raw_ostream.h>
 
 #include "ReachabilityAnalysis.h"
@@ -108,7 +108,17 @@ Function *ReachabilityAnalysis::getEntryPoint() {
 
 void ReachabilityAnalysis::getCallTargets(CallInst *call_inst, std::set<Function *> &targets) {
     Function *called_function = call_inst->getCalledFunction();
+    Value *calledValue = call_inst->getCalledValue();
+
+    if (!called_function) {
+        /* the called value should be one of these: function pointer, cast, alias */
+        if (isa<ConstantExpr>(calledValue)) {
+            called_function = getCastedFunction(dyn_cast<ConstantExpr>(calledValue));
+        }
+    }
+
     if (called_function == NULL) {
+        /* the called value should be a function pointer */
         Type *called_type = call_inst->getOperand(call_inst->getNumOperands() - 1)->getType();
         Type *elementType = dyn_cast<PointerType>(called_type)->getElementType();
         if (!elementType) {
@@ -125,13 +135,37 @@ void ReachabilityAnalysis::getCallTargets(CallInst *call_inst, std::set<Function
         outs() << "\n";
 
         if (functionTypeMap.find(type) != functionTypeMap.end()) {
-            std::set<Function *> functions = functionTypeMap.find(type)->second;
+            std::set<Function *> &functions = functionTypeMap.find(type)->second;
             targets.insert(functions.begin(), functions.end());
             outs() << functions.size() << " target functions" << "\n";
         }
     } else {
         targets.insert(called_function);
     }
+}
+
+Function *ReachabilityAnalysis::getCastedFunction(ConstantExpr *ce) {
+    if (!ce->isCast()) {
+        return NULL;
+    }
+
+    Value *value = ce->getOperand(0);
+    if (isa<Function>(value)) {
+        return dyn_cast<Function>(value);
+    }
+
+    if (isa<GlobalAlias>(value)) {
+        GlobalAlias *globalAlias = dyn_cast<GlobalAlias>(value);
+        if (!isa<Function>(globalAlias->getAliasee())) {
+            assert(false);
+        }
+        return dyn_cast<Function>(globalAlias->getAliasee());
+    }
+
+    errs() << "unexpected casted value: "; value->print(errs()); errs() << "\n";
+    assert(false);
+
+    return NULL;
 }
 
 /* TODO: handle klee_* functions */

@@ -8,6 +8,7 @@
 #include <llvm/IR/Function.h>
 #include <llvm/IR/Instruction.h>
 #include <llvm/IR/Instructions.h>
+#include <llvm/IR/Constants.h>
 
 class ReachabilityAnalysis {
 public:
@@ -30,6 +31,8 @@ private:
     void computeFunctionTypeMap();
 
     bool isVirtual(llvm::Function *f);
+
+    llvm::Function *getCastedFunction(llvm::ConstantExpr *ce);
 
     void removeUnreachableFunctions();
 
