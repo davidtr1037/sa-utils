@@ -10,7 +10,6 @@
 #include "llvm/analysis/PointsTo/PointsTo.h"
 #include "llvm/analysis/ReachingDefinitions/ReachingDefinitions.h"
 
-#include "AAPass.h"
 #include "Cloner.h"
 
 using namespace dg;
@@ -24,16 +23,22 @@ private:
 protected:
     llvm::Module *M;
     uint32_t opts = 0;
-    AAPass *svfaa;
     std::string entryFunction;
     std::vector<std::string> criterions;
-    std::unique_ptr<LLVMPointerAnalysis> PTA;
+    LLVMPointerAnalysis *PTA;
     std::unique_ptr<LLVMReachingDefinitions> RD;
     LLVMDependenceGraph dg;
     LLVMSlicer slicer;
 
 public:
-    Slicer(llvm::Module *mod, uint32_t o, AAPass *svfaa, Cloner *cloner, std::string entryFunction, std::vector<std::string> criterions);
+    Slicer(
+        llvm::Module *mod,
+        uint32_t o,
+        std::string entryFunction,
+        std::vector<std::string> criterions,
+        LLVMPointerAnalysis *llvmpta,
+        Cloner *cloner
+    );
     ~Slicer();
 
     int run();

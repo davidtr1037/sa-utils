@@ -309,16 +309,29 @@ static int save_module(llvm::Module *M,
 //  The main class that represents slicer and covers the elementary
 //  functionality
 /// --------------------------------------------------------------------
-Slicer::Slicer(llvm::Module *mod, uint32_t o, AAPass *svfaa, Cloner *cloner,
-    std::string entryFunction, std::vector<std::string> criterions) :
+Slicer::Slicer(
+    llvm::Module *mod,
+    uint32_t o,
+    std::string entryFunction,
+    std::vector<std::string> criterions,
+    LLVMPointerAnalysis *llvmpta,
+    Cloner *cloner
+) :
     M(mod), 
     opts(o),
-    svfaa(svfaa),
     entryFunction(entryFunction),
     criterions(criterions),
-    /* we need the nodes of the whole program */
-    PTA(new LLVMPointerAnalysis(mod, pta_field_sensitivie, "main")),
-    RD(new LLVMReachingDefinitions(mod, PTA.get(), rd_strong_update_unknown, undefined_are_pure, ~((uint32_t)(0)), entryFunction)) 
+    PTA(llvmpta),
+    RD(
+        new LLVMReachingDefinitions(
+            mod,
+            PTA,
+            rd_strong_update_unknown,
+            undefined_are_pure,
+            ~((uint32_t)(0)),
+            entryFunction
+        )
+    )
 {
     assert(mod && "Need module");
     slicer.setCloner(cloner);
@@ -366,14 +379,14 @@ bool Slicer::buildDG()
 
     tm.start();
 
-    PTA->PS->setRoot(PTA->builder->buildLLVMPointerSubgraph());
-    SVFPointerAnalysis *pa = new SVFPointerAnalysis(M, PTA.get(), svfaa);
-    pa->run();
+    //PTA->PS->setRoot(PTA->builder->buildLLVMPointerSubgraph());
+    //SVFPointerAnalysis *pa = new SVFPointerAnalysis(M, PTA.get(), svfaa);
+    //pa->run();
 
     tm.stop();
     tm.report("INFO: Points-to analysis took");
 
-    dg.build(M, PTA.get(), M->getFunction(entryFunction));
+    dg.build(M, PTA, M->getFunction(entryFunction));
 
     // verify if the graph is built correctly
     // FIXME - do it optionally (command line argument)
@@ -468,7 +481,7 @@ void Slicer::computeEdges()
     tm.report("INFO: Reaching defs analysis took");
 
     LLVMDefUseAnalysis DUA(&dg, RD.get(),
-            PTA.get(), undefined_are_pure);
+            PTA, undefined_are_pure);
     tm.start();
     DUA.run(); // add def-use edges according that
     tm.stop();
