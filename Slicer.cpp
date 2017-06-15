@@ -480,8 +480,7 @@ void Slicer::computeEdges()
     tm.stop();
     tm.report("INFO: Reaching defs analysis took");
 
-    LLVMDefUseAnalysis DUA(&dg, RD.get(),
-            PTA, undefined_are_pure);
+    LLVMDefUseAnalysis DUA(&dg, RD.get(), PTA, undefined_are_pure);
     tm.start();
     DUA.run(); // add def-use edges according that
     tm.stop();
