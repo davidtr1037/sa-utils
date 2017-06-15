@@ -4,16 +4,32 @@
 #include <llvm/IR/Module.h>
 #include <llvm/IR/Function.h>
 
+#include "llvm/analysis/PointsTo/PointsTo.h"
+
+#include "AAPass.h"
 #include "ModRefAnalysis.h"
 #include "Annotator.h"
 #include "Cloner.h"
+#include "SVFPointerAnalysis.h"
 #include "Slicer.h"
 #include "SliceGenerator.h"
 
 using namespace std;
 using namespace llvm;
+using namespace dg;
 
 void SliceGenerator::generate() {
+    /* Notes:
+       - we need the nodes of the whole program
+       - field sensitive (not sure if this flag changes anything...)
+    */
+    LLVMPointerAnalysis *llvmpta = new LLVMPointerAnalysis(module, UNKNOWN_OFFSET, "main");
+    llvmpta->PS->setRoot(llvmpta->builder->buildLLVMPointerSubgraph());
+
+    /* translate the results of SVF to DG */
+    SVFPointerAnalysis svfpa(module, llvmpta, aa);
+    svfpa.run();
+
     ModRefAnalysis::SideEffects &sideEffects = mra->getSideEffects();
 
     for (ModRefAnalysis::SideEffects::iterator i = sideEffects.begin(); i != sideEffects.end(); i++) {
@@ -37,7 +53,7 @@ void SliceGenerator::generate() {
 
         /* generate slice */
         string entryName = f->getName().data();
-        Slicer *slicer = new Slicer(module, 0, aa, cloner, entryName, criterions);
+        Slicer *slicer = new Slicer(module, 0, entryName, criterions, llvmpta, cloner);
         slicer->setSliceId(sliceId);
         slicer->run();
 
