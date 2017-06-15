@@ -41,7 +41,7 @@ public:
     bool functionPointerCall(PSNode *callsite, PSNode *called);
     void handlePhi(PSNode *node);
     void handleOperand(PSNode *operand);
-
+    void updatePointsTo(PSNode *operand, PAGNode *pagnode);
     PSNode *getAllocNode(ObjPN *node);
     uint64_t getAllocNodeOffset(GepObjPN *node);
 
