@@ -113,7 +113,12 @@ void ReachabilityAnalysis::getCallTargets(CallInst *call_inst, std::set<Function
     if (!called_function) {
         /* the called value should be one of these: function pointer, cast, alias */
         if (isa<ConstantExpr>(calledValue)) {
-            called_function = getCastedFunction(dyn_cast<ConstantExpr>(calledValue));
+            Function *extracted = extractFunction(dyn_cast<ConstantExpr>(calledValue));
+            if (!extracted) {
+                /* TODO: unexpected value... */
+                assert(false);
+            }
+            called_function = extracted;
         }
     }
 
@@ -144,7 +149,7 @@ void ReachabilityAnalysis::getCallTargets(CallInst *call_inst, std::set<Function
     }
 }
 
-Function *ReachabilityAnalysis::getCastedFunction(ConstantExpr *ce) {
+Function *ReachabilityAnalysis::extractFunction(ConstantExpr *ce) {
     if (!ce->isCast()) {
         return NULL;
     }
@@ -155,15 +160,14 @@ Function *ReachabilityAnalysis::getCastedFunction(ConstantExpr *ce) {
     }
 
     if (isa<GlobalAlias>(value)) {
-        GlobalAlias *globalAlias = dyn_cast<GlobalAlias>(value);
-        if (!isa<Function>(globalAlias->getAliasee())) {
-            assert(false);
+        Constant *aliasee = dyn_cast<GlobalAlias>(value)->getAliasee();
+        if (isa<Function>(aliasee)) {
+            return dyn_cast<Function>(aliasee);
         }
-        return dyn_cast<Function>(globalAlias->getAliasee());
+        if (isa<ConstantExpr>(aliasee)) {
+            return extractFunction(dyn_cast<ConstantExpr>(aliasee));
+        }
     }
-
-    errs() << "unexpected casted value: "; value->print(errs()); errs() << "\n";
-    assert(false);
 
     return NULL;
 }

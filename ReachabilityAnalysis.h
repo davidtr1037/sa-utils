@@ -32,7 +32,7 @@ private:
 
     bool isVirtual(llvm::Function *f);
 
-    llvm::Function *getCastedFunction(llvm::ConstantExpr *ce);
+    llvm::Function *extractFunction(llvm::ConstantExpr *ce);
 
     void removeUnreachableFunctions();
 
