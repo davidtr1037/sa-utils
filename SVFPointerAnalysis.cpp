@@ -23,59 +23,63 @@ using namespace dg::analysis::pta;
 void SVFPointerAnalysis::run() {
     /* update virtual call related nodes */
     handleVirtualCalls();
-    outs() << "nodes count " << pta->getNodesMap().size() << "\n";
+    outs() << "DG PTA nodes count: " << pta->getNodesMap().size() << "\n";
     
     for (auto &v : pta->getNodesMap()) {
         PSNode *node = v.second.second;
+        handleNode(node);
+    }
+}
 
-        Value *node_value = node->getUserData<Value>();
-        //outs() << "NODE VALUE: "; node_value->print(outs()); outs() << "\n";
+void SVFPointerAnalysis::handleNode(PSNode *node) {
+    Value *node_value = node->getUserData<Value>();
+    //errs() << "NODE VALUE: "; node_value->print(errs()); errs() << "\n";
 
-        switch (node->getType()) {
-        case LOAD:
-            handleLoad(node);
-            break;
+    switch (node->getType()) {
+    case LOAD:
+        handleLoad(node);
+        break;
 
-        case STORE:
-            handleStore(node);
-            break;
+    case STORE:
+        handleStore(node);
+        break;
 
-        case GEP:
-            handleGep(node);
-            break;
+    case GEP:
+        handleGep(node);
+        break;
 
-        case CAST:
-            handleCast(node);
-            break;
+    case CAST:
+        handleCast(node);
+        break;
 
-        case CONSTANT:
-            break;
+    case CONSTANT:
+        break;
 
-        case CALL_RETURN:
-        case RETURN:
-        case PHI:
-            handlePhi(node);
-            break;
+    case CALL_RETURN:
+    case RETURN:
+    case PHI:
+        handlePhi(node);
+        break;
 
-        case CALL_FUNCPTR:
-            break;
+    case CALL_FUNCPTR:
+        break;
 
-        case MEMCPY:
-            break;
+    case MEMCPY:
+        /* TODO: handle? */
+        break;
 
-        case ALLOC:
-        case DYN_ALLOC:
-        case FUNCTION:
-            assert(node->doesPointsTo(node, 0));
-            assert(node->pointsTo.size() == 1);
-        case CALL:
-        case ENTRY:
-        case NOOP:
-            break;
+    case ALLOC:
+    case DYN_ALLOC:
+    case FUNCTION:
+        assert(node->doesPointsTo(node, 0));
+        assert(node->pointsTo.size() == 1);
+    case CALL:
+    case ENTRY:
+    case NOOP:
+        break;
 
-        default:
-            assert(0 && "Unknown type");
-        }
+    default:
+        assert(false);
     }
 }
 
@@ -97,27 +101,27 @@ void SVFPointerAnalysis::handleVirtualCalls() {
 }
 
 void SVFPointerAnalysis::handleLoad(PSNode *node) {
-    PSNode *operand = node->getOperand(0);
-    handleOperand(operand);
+    handleOperand(node);
+    handleOperand(node->getOperand(0));
 }
 
 void SVFPointerAnalysis::handleStore(PSNode *node) {
-    PSNode *operand = node->getOperand(1);
-    handleOperand(operand);
+    handleOperand(node);
+    handleOperand(node->getOperand(1));
 }
 
 void SVFPointerAnalysis::handleGep(PSNode *node) {
-    Value *v = node->getUserData<Value>();
     handleOperand(node);
+    handleOperand(node->getOperand(0));
 }
 
 void SVFPointerAnalysis::handleCast(PSNode *node) {
     handleOperand(node);
-    PSNode *operand = node->getOperand(0);
-    handleOperand(operand);
+    handleOperand(node->getOperand(0));
 }
 
 void SVFPointerAnalysis::handlePhi(PSNode *node) {
+    /* TODO: check if required! */
     handleOperand(node);
     for (PSNode *op : node->getOperands()) {
         handleOperand(op);
@@ -175,6 +179,11 @@ void SVFPointerAnalysis::handleOperand(PSNode *operand) {
         return;
     }
 
+    if (!aa->getPTA()->getPAG()->hasValueNode(value)) {
+        /* TODO: not a pointer? */
+        return;
+    }
+
     NodeID id = aa->getPTA()->getPAG()->getValueNode(value);
     PointsTo &pts = aa->getPTA()->getPts(id);
 
@@ -223,6 +232,10 @@ void SVFPointerAnalysis::updatePointsTo(PSNode *operand, PAGNode *pagnode) {
         return;
     }
 
+    if (!alloc_node) {
+        return;
+    }
+
     /* add to PointsTo set */
     operand->addPointsTo(Pointer(alloc_node, offset));
 }
@@ -230,13 +243,12 @@ void SVFPointerAnalysis::updatePointsTo(PSNode *operand, PAGNode *pagnode) {
 PSNode *SVFPointerAnalysis::getAllocNode(ObjPN *node) {
     /* get SVF memory object (allocation site) */
     const MemObj *mo = node->getMemObj();    
-    //outs() << "RefVal: "; mo->getRefVal()->print(outs()); outs() << "\n";
 
     /* get corresponding DG node */
     PSNode *ref_node = pta->builder->getNode(mo->getRefVal());
     if (!ref_node) {
-        /* TODO: handle unexpected result */
-        assert(false);
+        /* TODO: check why DG does not have this allocation site */
+        //assert(false);
     }
 
     return ref_node;

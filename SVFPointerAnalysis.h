@@ -33,6 +33,7 @@ public:
 
     void run();
     void handleVirtualCalls();
+    void handleNode(PSNode *node);
     void handleLoad(PSNode *node);
     void handleStore(PSNode *node);
     void handleGep(PSNode *node);
