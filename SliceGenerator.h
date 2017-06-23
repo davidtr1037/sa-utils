@@ -7,6 +7,8 @@
 #include <llvm/IR/Module.h>
 #include <llvm/IR/Function.h>
 
+#include "llvm/analysis/PointsTo/PointsTo.h"
+
 #include "AAPass.h"
 #include "ModRefAnalysis.h"
 #include "Annotator.h"
@@ -20,13 +22,15 @@ public:
         AAPass *aa,
         ModRefAnalysis *mra,
         Annotator *annotator,
-        Cloner *cloner
+        Cloner *cloner,
+        bool lazyMode = false
     ) :
         module(module), 
         aa(aa), 
         mra(mra), 
         annotator(annotator),
         cloner(cloner),
+        lazyMode(lazyMode),
         llvmpta(0)
     {
 
@@ -49,7 +53,8 @@ private:
     ModRefAnalysis *mra;
     Annotator *annotator;
     Cloner *cloner;
-    LLVMPointerAnalysis *llvmpta;
+    bool lazyMode;
+    dg::LLVMPointerAnalysis *llvmpta;
 };
 
 #endif

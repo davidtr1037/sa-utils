@@ -30,8 +30,11 @@ void SliceGenerator::generate() {
     SVFPointerAnalysis svfpa(module, llvmpta, aa);
     svfpa.run();
 
-    ModRefAnalysis::SideEffects &sideEffects = mra->getSideEffects();
+    if (lazyMode) {
+        return;
+    }
 
+    ModRefAnalysis::SideEffects &sideEffects = mra->getSideEffects();
     for (ModRefAnalysis::SideEffects::iterator i = sideEffects.begin(); i != sideEffects.end(); i++) {
         ModRefAnalysis::SideEffect &sideEffect = *i;
         generateSlice(sideEffect.getFunction(), sideEffect.id, sideEffect.type);
