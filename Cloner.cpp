@@ -101,7 +101,8 @@ Cloner::SliceMap *Cloner::getSlices(llvm::Function *function) {
         return 0;
     }
 
-    return &(i->second);
+    SliceMap &sliceMap = i->second;
+    return &sliceMap;
 }
 
 Cloner::SliceInfo *Cloner::getSliceInfo(llvm::Function *function, uint32_t sliceId) {
@@ -115,7 +116,8 @@ Cloner::SliceInfo *Cloner::getSliceInfo(llvm::Function *function, uint32_t slice
         return 0;
     }
 
-    return &(i->second);
+    SliceInfo &sliceInfo = i->second;
+    return &sliceInfo;
 }
 
 /* translate a cloned value to it's original one */
