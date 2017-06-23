@@ -26,12 +26,15 @@ public:
         aa(aa), 
         mra(mra), 
         annotator(annotator),
-        cloner(cloner)
+        cloner(cloner),
+        llvmpta(0)
     {
 
     }
 
     void generate();
+
+    void generateSlice(llvm::Function *f, uint32_t sliceId, ModRefAnalysis::SideEffectType type);
 
     void dumpSlices();
 
@@ -46,6 +49,7 @@ private:
     ModRefAnalysis *mra;
     Annotator *annotator;
     Cloner *cloner;
+    LLVMPointerAnalysis *llvmpta;
 };
 
 #endif
