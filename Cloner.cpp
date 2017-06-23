@@ -57,24 +57,28 @@ void Cloner::run() {
 
 void Cloner::cloneFunction(Function *f, uint32_t sliceId) {
     /* TODO: check the last parameter! */
-    ValueToValueMapTy *vmap = new ValueToValueMapTy();
-    Function *cloned = CloneFunction(f, *vmap, true);
+    ValueToValueMapTy *v2vmap = new ValueToValueMapTy();
+    Function *cloned = CloneFunction(f, *v2vmap, true);
 
     /* set function name */
     string clonedName = f->getName().str() + string("_clone_") + to_string(sliceId);
     cloned->setName(StringRef(clonedName));
 
     /* update map */
-    SliceInfo sliceInfo = make_pair(cloned, vmap);
+    SliceInfo sliceInfo = {
+        .f = cloned,
+        .isSliced = false,
+        .v2vmap = v2vmap
+    };
     functionMap[f][sliceId] = sliceInfo;
 
     /* update map */
-    cloneInfoMap[cloned] = buildReversedMap(vmap);
+    cloneInfoMap[cloned] = buildReversedMap(v2vmap);
 }
 
-Cloner::ValueTranslationMap *Cloner::buildReversedMap(ValueToValueMapTy *vmap) {
+Cloner::ValueTranslationMap *Cloner::buildReversedMap(ValueToValueMapTy *v2vmap) {
     ValueTranslationMap *map = new ValueTranslationMap();
-    for (ValueToValueMapTy::iterator i = vmap->begin(); i != vmap->end(); i++) {
+    for (ValueToValueMapTy::iterator i = v2vmap->begin(); i != v2vmap->end(); i++) {
         /* TODO: should be const Value... */
         Value *value = (Value *)(i->first);
         WeakVH &wvh = i->second;
@@ -156,10 +160,11 @@ Cloner::~Cloner() {
         SliceMap &sliceMap = i->second;
         for (SliceMap::iterator j = sliceMap.begin(); j != sliceMap.end(); j++) {
             SliceInfo &sliceInfo = j->second;
-            Function *cloned = sliceInfo.first;
+            /* TODO: refactor? */
+            Function *cloned = sliceInfo.f;
             delete cloned;
-            ValueToValueMapTy *vmap = sliceInfo.second;
-            delete vmap;
+            ValueToValueMapTy *v2vmap = sliceInfo.v2vmap;
+            delete v2vmap;
         }
     }
 }

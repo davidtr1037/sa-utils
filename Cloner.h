@@ -17,7 +17,14 @@ class Cloner {
 public:
 
     typedef std::map<llvm::Value *, llvm::Value *> ValueTranslationMap;
-    typedef std::pair<llvm::Function *, llvm::ValueToValueMapTy *> SliceInfo;
+    struct SliceInfo {
+        /* the cloned/sliced function */
+        llvm::Function *f;
+        /* we have to know if it was already sliced */
+        bool isSliced;
+        /* translates an original value to a cloned one */
+        llvm::ValueToValueMapTy *v2vmap;
+    };
     typedef std::map<uint32_t, SliceInfo> SliceMap;
     typedef std::map<llvm::Function *, SliceMap> FunctionMap;
     typedef std::map<llvm::Function *, ValueTranslationMap *> CloneInfoMap;
