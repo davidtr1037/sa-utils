@@ -104,7 +104,7 @@ Cloner::SliceMap *Cloner::getSlices(llvm::Function *function) {
     return &(i->second);
 }
 
-Cloner::SliceInfo *Cloner::getSlice(llvm::Function *function, uint32_t sliceId) {
+Cloner::SliceInfo *Cloner::getSliceInfo(llvm::Function *function, uint32_t sliceId) {
     SliceMap *sliceMap = getSlices(function);
     if (!sliceMap) {
         return 0;
@@ -116,15 +116,6 @@ Cloner::SliceInfo *Cloner::getSlice(llvm::Function *function, uint32_t sliceId) 
     }
 
     return &(i->second);
-}
-
-Cloner::ValueTranslationMap *Cloner::getCloneInfo(llvm::Function *cloned) {
-    CloneInfoMap::iterator i = cloneInfoMap.find(cloned);
-    if (i == cloneInfoMap.end()) {
-        return 0;
-    }
-
-    return i->second;
 }
 
 /* translate a cloned value to it's original one */
@@ -148,6 +139,7 @@ Value *Cloner::translateValue(Value *value) {
         /* TODO: add assert instead? */
         return NULL;
     }
+
     return i->second;
 }
 

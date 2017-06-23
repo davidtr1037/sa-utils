@@ -38,10 +38,8 @@ public:
 
     SliceMap *getSlices(llvm::Function *function);
 
-    SliceInfo *getSlice(llvm::Function *function, uint32_t sliceId);
+    SliceInfo *getSliceInfo(llvm::Function *function, uint32_t sliceId);
 
-    ValueTranslationMap *getCloneInfo(llvm::Function *cloned);
-    
     llvm::Value *translateValue(llvm::Value *);
 
     ReachabilityMap &getReachabilityMap();
