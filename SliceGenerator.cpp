@@ -70,8 +70,21 @@ void SliceGenerator::generateSlice(Function *f, uint32_t sliceId, ModRefAnalysis
     slicer->setSliceId(sliceId);
     slicer->run();
 
-    /* TODO: what happens with allocated instructions? (ret/branch/...) */
-    delete slicer;
+    markAsSliced(f, sliceId);
+}
+
+void SliceGenerator::markAsSliced(Function *sliceEntry, uint32_t sliceId) {
+    /* mark all reachable functions as sliced... */
+    set<Function *> &reachable = cloner->getReachabilityMap()[sliceEntry];
+    for (set<Function *>::iterator i = reachable.begin(); i != reachable.end(); i++) {
+        Function *f = *i;
+        if (f->isDeclaration()) {
+            continue;
+        }
+
+        Cloner::SliceInfo *sliceInfo = cloner->getSliceInfo(*i, sliceId);
+        sliceInfo->isSliced = true;
+    }
 }
 
 void SliceGenerator::dumpSlices() {
