@@ -34,10 +34,10 @@ void SliceGenerator::generate() {
         return;
     }
 
+    /* generate all the slices... */
     ModRefAnalysis::SideEffects &sideEffects = mra->getSideEffects();
     for (ModRefAnalysis::SideEffects::iterator i = sideEffects.begin(); i != sideEffects.end(); i++) {
-        ModRefAnalysis::SideEffect &sideEffect = *i;
-        generateSlice(sideEffect.getFunction(), sideEffect.id, sideEffect.type);
+        generateSlice(i->getFunction(), i->id, i->type);
     }
 }
 
@@ -99,7 +99,7 @@ void SliceGenerator::dumpSlices(ModRefAnalysis::SideEffect &sideEffect) {
     Function *f = sideEffect.getFunction();
     uint32_t id = sideEffect.id;
 
-    set<Function *> reachable = cloner->getReachabilityMap()[f];
+    set<Function *> &reachable = cloner->getReachabilityMap()[f];
     for (set<Function *>::iterator i = reachable.begin(); i != reachable.end(); i++) {
         Function *f = *i;
         if (f->isDeclaration()) {
