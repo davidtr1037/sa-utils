@@ -66,9 +66,9 @@ void SliceGenerator::generateSlice(Function *f, uint32_t sliceId, ModRefAnalysis
 
     /* generate slice */
     string entryName = f->getName().data();
-    Slicer *slicer = new Slicer(module, 0, entryName, criterions, llvmpta, cloner);
-    slicer->setSliceId(sliceId);
-    slicer->run();
+    Slicer slicer(module, 0, entryName, criterions, llvmpta, cloner);
+    slicer.setSliceId(sliceId);
+    slicer.run();
 
     markAsSliced(f, sliceId);
 }
