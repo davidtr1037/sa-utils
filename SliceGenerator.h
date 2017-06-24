@@ -42,13 +42,13 @@ public:
 
     void dumpSlices();
 
+    void dumpSlice(llvm::Function *f, uint32_t sliceId);
+
 private:
 
     void markAsSliced(llvm::Function *sliceEntry, uint32_t sliceId);
 
     void dumpSlices(ModRefAnalysis::SideEffect &sideEffect);
-
-    void dumpSlice(llvm::Function *f, uint32_t sliceId);
 
     llvm::Module *module;
     AAPass *aa;

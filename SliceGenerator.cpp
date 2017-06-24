@@ -112,6 +112,8 @@ void SliceGenerator::dumpSlices(ModRefAnalysis::SideEffect &sideEffect) {
 
 void SliceGenerator::dumpSlice(Function *f, uint32_t sliceId) {
     Cloner::SliceInfo *si = cloner->getSliceInfo(f, sliceId);
-    Function *sliced = si->f;
-    sliced->print(outs());
+    if (si->isSliced) {
+        Function *sliced = si->f;
+        sliced->print(outs());
+    }
 }
