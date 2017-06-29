@@ -162,6 +162,7 @@ void ModRefAnalysis::addStore(Function *f, Instruction *store) {
     }
 }
 
+/* TODO: find a better name... */
 void ModRefAnalysis::collectRefInfo(Function *entry) {
     std::stack<BasicBlock *> stack;
     std::set<BasicBlock *> visited;
@@ -195,9 +196,11 @@ void ModRefAnalysis::collectRefInfo(Function *entry) {
                         }
                     }
                 }
-                /* TODO: is it enough to check LOAD instructions? */
                 if (inst->getOpcode() == Instruction::Load) {
                     addLoad(inst);
+                }
+                if (inst->getOpcode() == Instruction::Store) {
+                    addOverridingStore(inst);
                 }
             }
         }
@@ -223,6 +226,17 @@ void ModRefAnalysis::addLoad(Instruction *load) {
     for (PointsTo::iterator i = pts.begin(); i != pts.end(); ++i) {
         NodeID nodeId = *i;
         objToLoadMap[nodeId].insert(load);
+    }
+}
+
+void ModRefAnalysis::addOverridingStore(Instruction *store) {
+    AliasAnalysis::Location storeLocation = getStoreLocation(dyn_cast<StoreInst>(store));
+    NodeID id = aa->getPTA()->getPAG()->getValueNode(storeLocation.Ptr);
+    PointsTo &pts = aa->getPTA()->getPts(id);
+
+    for (PointsTo::iterator i = pts.begin(); i != pts.end(); ++i) {
+        NodeID nodeId = *i;
+        objToOverridingStoreMap[nodeId].insert(store);
     }
 }
 
@@ -255,6 +269,10 @@ void ModRefAnalysis::computeModRefInfo() {
                 ModInfo modInfo = make_pair(f, allocSite);
                 loadToModInfoMap[load].insert(modInfo);
             }
+
+            /* ... */
+            InstructionSet localOverridingStores = objToOverridingStoreMap[nodeId];
+            overridingStores.insert(localOverridingStores.begin(), localOverridingStores.end());
         }
     }
 }
@@ -443,6 +461,15 @@ void ModRefAnalysis::dumpModInfoToIdMap() {
         outs() << "id: " << id << "\n";
     }
     outs() << "\n";
+}
+
+void ModRefAnalysis::dumpOverridingStores() {
+    outs() << "### Overriding Stores ###\n";
+
+    for (InstructionSet::iterator j = overridingStores.begin(); j != overridingStores.end(); j++) {
+        Instruction *inst = *j;
+        dumpInst(inst);
+    }
 }
 
 void ModRefAnalysis::dumpInst(Instruction *inst, const char *prefix) {

@@ -24,6 +24,7 @@ public:
 
     typedef std::map<std::pair<llvm::Function *, NodeID>, InstructionSet> ObjToStoreMap;
     typedef std::map<NodeID, InstructionSet> ObjToLoadMap;
+    typedef std::map<NodeID, InstructionSet> ObjToOverridingStoreMap;
     typedef std::map<llvm::Instruction *, InstructionSet> LoadToStoreMap;
 
     typedef std::pair<const llvm::Value *, uint64_t> AllocSite;
@@ -98,6 +99,8 @@ public:
 
     void dumpModInfoToIdMap();
 
+    void dumpOverridingStores();
+
     void dumpInst(llvm::Instruction *load, const char *prefix = "");
     
     void dumpModInfo(const ModInfo &modInfo, const char *prefix = "");
@@ -115,6 +118,8 @@ private:
     void collectRefInfo(llvm::Function *entry);
 
     void addLoad(llvm::Instruction *load);
+
+    void addOverridingStore(llvm::Instruction *store);
 
     void computeModRefInfo();
 
@@ -143,6 +148,7 @@ private:
     ObjToStoreMap objToStoreMap;
     PointsTo refPts;
     ObjToLoadMap objToLoadMap;
+    ObjToOverridingStoreMap objToOverridingStoreMap;
 
     ModSetMap modSetMap;
 
@@ -156,6 +162,8 @@ private:
     RetSliceIdMap retSliceIdMap;
 
     SideEffects sideEffects;
+
+    InstructionSet overridingStores;
 };
 
 #endif
