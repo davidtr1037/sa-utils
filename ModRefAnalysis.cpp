@@ -365,11 +365,6 @@ void ModRefAnalysis::getApproximateModInfos(Instruction *inst, AllocSite hint, s
         }
     }
 
-    if (result.empty()) {
-        /* TODO: something went wrong with the static analysis... */
-        assert(false);
-    }
-
     return;
 }
 
