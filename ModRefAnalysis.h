@@ -81,6 +81,8 @@ public:
 
     SideEffects &getSideEffects();
 
+    InstructionSet &getOverridingStores();
+
     ModInfoToIdMap &getModInfoToIdMap();
 
     bool mayBlock(llvm::Instruction *load);

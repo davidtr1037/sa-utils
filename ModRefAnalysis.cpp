@@ -95,6 +95,10 @@ ModRefAnalysis::SideEffects &ModRefAnalysis::getSideEffects() {
     return sideEffects;
 }
 
+ModRefAnalysis::InstructionSet &ModRefAnalysis::getOverridingStores() {
+    return overridingStores;
+}
+
 ModRefAnalysis::ModInfoToIdMap &ModRefAnalysis::getModInfoToIdMap() {
     return modInfoToIdMap;
 }
