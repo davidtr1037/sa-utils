@@ -253,13 +253,13 @@ void ModRefAnalysis::computeModRefInfo() {
 
             /* update modifies-set */
             pair<Function *, NodeID> k = make_pair(f, nodeId);
-            set<Instruction *> stores = objToStoreMap[k];
+            InstructionSet &stores = objToStoreMap[k];
             modSet.insert(stores.begin(), stores.end());
 
-            set<Instruction *> loads = objToLoadMap[nodeId];
+            InstructionSet &loads = objToLoadMap[nodeId];
             AllocSite allocSite = getAllocSite(nodeId);
 
-            for (set<Instruction *>::iterator i = loads.begin(); i != loads.end(); i++) {
+            for (InstructionSet::iterator i = loads.begin(); i != loads.end(); i++) {
                 Instruction *load = *i;
 
                 /* update with store instructions */
@@ -271,7 +271,7 @@ void ModRefAnalysis::computeModRefInfo() {
             }
 
             /* ... */
-            InstructionSet localOverridingStores = objToOverridingStoreMap[nodeId];
+            InstructionSet &localOverridingStores = objToOverridingStoreMap[nodeId];
             overridingStores.insert(localOverridingStores.begin(), localOverridingStores.end());
         }
     }
@@ -406,10 +406,10 @@ void ModRefAnalysis::dumpLoadToStoreMap() {
 
     for (LoadToStoreMap::iterator i = loadToStoreMap.begin(); i != loadToStoreMap.end(); i++) {
         Instruction *load = i->first;
-        set<Instruction *> stores = i->second;
+        InstructionSet &stores = i->second;
 
         dumpInst(load);
-        for (set<Instruction *>::iterator j = stores.begin(); j != stores.end(); j++) {
+        for (InstructionSet::iterator j = stores.begin(); j != stores.end(); j++) {
             Instruction *store = *j;
 
             dumpInst(store, "\t");
