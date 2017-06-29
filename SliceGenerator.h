@@ -42,7 +42,7 @@ public:
 
     void dumpSlices();
 
-    void dumpSlice(llvm::Function *f, uint32_t sliceId);
+    void dumpSlice(llvm::Function *f, uint32_t sliceId, bool recursively = false);
 
 private:
 

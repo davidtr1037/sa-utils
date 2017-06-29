@@ -96,24 +96,27 @@ void SliceGenerator::dumpSlices() {
 }
 
 void SliceGenerator::dumpSlices(ModRefAnalysis::SideEffect &sideEffect) {
-    Function *f = sideEffect.getFunction();
-    uint32_t id = sideEffect.id;
+    dumpSlice(sideEffect.getFunction(), sideEffect.id, true);
+}
 
-    set<Function *> &reachable = cloner->getReachabilityMap()[f];
-    for (set<Function *>::iterator i = reachable.begin(); i != reachable.end(); i++) {
-        Function *f = *i;
-        if (f->isDeclaration()) {
+void SliceGenerator::dumpSlice(Function *f, uint32_t sliceId, bool recursively) {
+    set<Function *> functions;
+    if (recursively) {
+        set<Function *> &reachable = cloner->getReachabilityMap()[f];
+        functions.insert(reachable.begin(), reachable.end());
+    } else {
+        functions.insert(f);
+    }
+
+    for (set<Function *>::iterator i = functions.begin(); i != functions.end(); i++) {
+        Function *g = *i;
+        if (g->isDeclaration()) {
             continue;
         }
 
-        dumpSlice(f, id);
-    }
-}
-
-void SliceGenerator::dumpSlice(Function *f, uint32_t sliceId) {
-    Cloner::SliceInfo *si = cloner->getSliceInfo(f, sliceId);
-    if (si->isSliced) {
-        Function *sliced = si->f;
-        sliced->print(outs());
+        Cloner::SliceInfo *si = cloner->getSliceInfo(g, sliceId);
+        if (si->isSliced) {
+            si->f->print(outs());
+        }
     }
 }
