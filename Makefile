@@ -34,6 +34,7 @@ LDFLAGS=-L$(SVF_PATH)/build/lib -L$(SVF_PATH)/build/lib/CUDD -L$(DG_PATH)/build/
 
 SOURCES=\
 		ReachabilityAnalysis.cpp \
+		Inliner.cpp \
 		AAPass.cpp \
 		ModRefAnalysis.cpp \
 		SVFPointerAnalysis.cpp \
