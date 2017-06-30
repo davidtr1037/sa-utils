@@ -19,6 +19,7 @@
 #include <MemoryModel/PointerAnalysis.h>
 
 #include "ReachabilityAnalysis.h"
+#include "Inliner.h"
 #include "AAPass.h"
 #include "ModRefAnalysis.h"
 #include "Annotator.h"
@@ -55,7 +56,10 @@ int main(int argc, char *argv[]) {
         targets.push_back(slicedFunction);
     }
 
+    vector<string> inlineTargets;
+
     ReachabilityAnalysis *ra = new ReachabilityAnalysis(module);
+    Inliner *inliner = new Inliner(module, targets, inlineTargets);
     AAPass *aa = new AAPass();
     aa->setPAType(PointerAnalysis::Andersen_WPA);
     ModRefAnalysis *mra = new ModRefAnalysis(module, ra, aa, "main", targets);
@@ -64,6 +68,7 @@ int main(int argc, char *argv[]) {
     SliceGenerator *sg = new SliceGenerator(module, aa, mra, annotator, cloner);
 
     ra->run();
+    inliner->run();
     legacy::PassManager pm;
     pm.add(aa);
     pm.run(*module);
