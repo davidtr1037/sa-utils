@@ -59,7 +59,7 @@ int main(int argc, char *argv[]) {
     vector<string> inlineTargets;
 
     ReachabilityAnalysis *ra = new ReachabilityAnalysis(module);
-    Inliner *inliner = new Inliner(module, targets, inlineTargets);
+    Inliner *inliner = new Inliner(module, ra, targets, inlineTargets);
     AAPass *aa = new AAPass();
     aa->setPAType(PointerAnalysis::Andersen_WPA);
     ModRefAnalysis *mra = new ModRefAnalysis(module, ra, aa, "main", targets);

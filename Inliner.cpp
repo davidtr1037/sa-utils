@@ -12,6 +12,7 @@
 #include <llvm/Support/raw_ostream.h>
 #include <llvm/Transforms/Utils/Cloning.h>
 
+#include "ReachabilityAnalysis.h"
 #include "Inliner.h"
 
 using namespace std;
@@ -23,10 +24,19 @@ void Inliner::run() {
     }
 
     for (vector<string>::iterator i = targets.begin(); i != targets.end(); i++) {
-        Function *f = module->getFunction(*i);
-        assert(f);
+        Function *entry = module->getFunction(*i);
+        assert(entry);
 
-        inlineCalls(f, functions);
+        set<Function *> reachable;
+        ra->computeReachableFunctions(entry, reachable);
+        for (set<Function *>::iterator i = reachable.begin(); i != reachable.end(); i++) {
+            Function *f = *i;
+            if (f->isDeclaration()) {
+                continue;
+            }
+
+            inlineCalls(f, functions);
+        }
     }
 }
 
