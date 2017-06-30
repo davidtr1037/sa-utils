@@ -87,6 +87,8 @@ public:
 
     bool mayBlock(llvm::Instruction *load);
 
+    bool mayOverride(llvm::Instruction *store);
+
     bool getRetSliceId(llvm::Function *f, uint32_t &id);
 
     void getApproximateModInfos(llvm::Instruction *inst, AllocSite hint, std::set<ModInfo> &result);

@@ -91,6 +91,11 @@ bool ModRefAnalysis::mayBlock(Instruction *load) {
     return i != loadToStoreMap.end();
 }
 
+bool ModRefAnalysis::mayOverride(Instruction *store) {
+    InstructionSet::iterator i = find(overridingStores.begin(), overridingStores.end(), store);
+    return i != overridingStores.end();
+}
+
 ModRefAnalysis::SideEffects &ModRefAnalysis::getSideEffects() {
     return sideEffects;
 }
