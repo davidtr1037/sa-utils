@@ -38,17 +38,17 @@ public:
 
     void generate();
 
-    void generateSlice(llvm::Function *f, uint32_t sliceId, ModRefAnalysis::SideEffectType type);
-
-    void dumpSlices();
+    void generateSlice(
+        llvm::Function *f,
+        uint32_t sliceId,
+        ModRefAnalysis::SideEffectType type
+    );
 
     void dumpSlice(llvm::Function *f, uint32_t sliceId, bool recursively = false);
 
 private:
 
     void markAsSliced(llvm::Function *sliceEntry, uint32_t sliceId);
-
-    void dumpSlices(ModRefAnalysis::SideEffect &sideEffect);
 
     llvm::Module *module;
     AAPass *aa;

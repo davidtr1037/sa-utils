@@ -64,6 +64,9 @@ void SliceGenerator::generateSlice(Function *f, uint32_t sliceId, ModRefAnalysis
         break;
     }
 
+    /* create the clone (inclusive) */
+    cloner->clone(f, sliceId);
+
     /* generate slice */
     string entryName = f->getName().data();
     Slicer slicer(module, 0, entryName, criterions, llvmpta, cloner);
@@ -74,8 +77,12 @@ void SliceGenerator::generateSlice(Function *f, uint32_t sliceId, ModRefAnalysis
 }
 
 void SliceGenerator::markAsSliced(Function *sliceEntry, uint32_t sliceId) {
+    set<Function *> reachable;
+    if (!cloner->getReachableFunctions(sliceEntry, reachable)) {
+        assert(false);
+    }
+
     /* mark all reachable functions as sliced... */
-    set<Function *> &reachable = cloner->getReachabilityMap()[sliceEntry];
     for (set<Function *>::iterator i = reachable.begin(); i != reachable.end(); i++) {
         Function *f = *i;
         if (f->isDeclaration()) {
@@ -87,22 +94,17 @@ void SliceGenerator::markAsSliced(Function *sliceEntry, uint32_t sliceId) {
     }
 }
 
-void SliceGenerator::dumpSlices() {
-    ModRefAnalysis::SideEffects &sideEffects = mra->getSideEffects();
-
-    for (ModRefAnalysis::SideEffects::iterator i = sideEffects.begin(); i != sideEffects.end(); i++) {
-        dumpSlices(*i);
-    }
-}
-
-void SliceGenerator::dumpSlices(ModRefAnalysis::SideEffect &sideEffect) {
-    dumpSlice(sideEffect.getFunction(), sideEffect.id, true);
-}
-
 void SliceGenerator::dumpSlice(Function *f, uint32_t sliceId, bool recursively) {
+    Cloner::SliceInfo *sliceInfo = cloner->getSliceInfo(f, sliceId);
+    if (!sliceInfo) {
+        /* slice not found... */
+        return;
+    }
+
     set<Function *> functions;
     if (recursively) {
-        set<Function *> &reachable = cloner->getReachabilityMap()[f];
+        set<Function *> reachable;
+        cloner->getReachableFunctions(f, reachable);
         functions.insert(reachable.begin(), reachable.end());
     } else {
         functions.insert(f);
@@ -114,9 +116,9 @@ void SliceGenerator::dumpSlice(Function *f, uint32_t sliceId, bool recursively) 
             continue;
         }
 
-        Cloner::SliceInfo *si = cloner->getSliceInfo(g, sliceId);
-        if (si->isSliced) {
-            si->f->print(outs());
+        sliceInfo = cloner->getSliceInfo(g, sliceId);
+        if (sliceInfo->isSliced) {
+            sliceInfo->f->print(outs());
         }
     }
 }
