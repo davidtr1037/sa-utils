@@ -28,13 +28,14 @@ public:
     typedef std::map<uint32_t, SliceInfo> SliceMap;
     typedef std::map<llvm::Function *, SliceMap> FunctionMap;
     typedef std::map<llvm::Function *, ValueTranslationMap *> CloneInfoMap;
-    typedef std::map<llvm::Function *, std::set<llvm::Function *> > ReachabilityMap;
+    typedef std::set<llvm::Function *> FunctionSet;
+    typedef std::map<llvm::Function *, FunctionSet> ReachabilityMap;
 
     Cloner(llvm::Module *module, ReachabilityAnalysis *ra);
 
     ~Cloner();
 
-    void run();
+    void clone(llvm::Function *f, uint32_t sliceId);
 
     SliceMap *getSlices(llvm::Function *function);
 
@@ -42,13 +43,10 @@ public:
 
     llvm::Value *translateValue(llvm::Value *);
 
-    ReachabilityMap &getReachabilityMap();
-
-    /* TODO: should be private */
-    llvm::Module *module;
-    ReachabilityAnalysis *ra;
-    ModRefAnalysis *mra;
-    std::vector<llvm::Function *> targets;
+    bool getReachableFunctions(
+        llvm::Function *f,
+        std::set<llvm::Function *> &functions
+    );
 
 private:
 

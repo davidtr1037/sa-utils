@@ -26,30 +26,23 @@ Cloner::Cloner(llvm::Module *module, ReachabilityAnalysis *ra) :
 
 }
 
-void Cloner::run() {
-    ModRefAnalysis::SideEffects &sideEffects = mra->getSideEffects();
+void Cloner::clone(Function *f, uint32_t sliceId) {
+    /* compute reachable functions only once */
+    if (reachabilityMap.find(f) == reachabilityMap.end()) {
+        set<Function *> &reachable = reachabilityMap[f];
+        ra->computeReachableFunctions(f, reachable);
+        outs() << f->getName() << ": " << reachable.size() << " reachable functions\n";
+    }
 
-    for (ModRefAnalysis::SideEffects::iterator i = sideEffects.begin(); i != sideEffects.end(); i++) {
-        Function *f = i->getFunction();
-        uint32_t sliceId = i->id;
-
-        /* compute reachable functions only once */
-        if (reachabilityMap.find(f) == reachabilityMap.end()) {
-            set<Function *> &reachable = reachabilityMap[f];
-            ra->computeReachableFunctions(f, reachable);
-            outs() << f->getName() << ": " << reachable.size() << " reachable functions\n";
+    set<Function *> &cached = reachabilityMap[f];
+    for (set<Function *>::iterator j = cached.begin(); j != cached.end(); j++) {
+        Function *f = *j;
+        if (f->isDeclaration()) {
+            continue;
         }
 
-        set<Function *> &cached = reachabilityMap[f];
-        for (set<Function *>::iterator j = cached.begin(); j != cached.end(); j++) {
-            Function *f = *j;
-            if (f->isDeclaration()) {
-                continue;
-            }
-
-            outs() << "cloning: " << f->getName() << "\n";
-            cloneFunction(f, sliceId);
-        }
+        outs() << "cloning: " << f->getName() << "\n";
+        cloneFunction(f, sliceId);
     }
 }
 
@@ -143,8 +136,14 @@ Value *Cloner::translateValue(Value *value) {
     return i->second;
 }
 
-Cloner::ReachabilityMap &Cloner::getReachabilityMap() {
-    return reachabilityMap;
+bool Cloner::getReachableFunctions(Function *f, set<Function *> &functions) {
+    ReachabilityMap::iterator i = reachabilityMap.find(f);
+    if (i == reachabilityMap.end()) {
+        return false;
+    }
+
+    functions = i->second;
+    return true;
 }
 
 Cloner::~Cloner() {
