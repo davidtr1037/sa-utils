@@ -30,7 +30,7 @@ public:
     typedef std::map<llvm::Function *, ValueTranslationMap *> CloneInfoMap;
     typedef std::map<llvm::Function *, std::set<llvm::Function *> > ReachabilityMap;
 
-    Cloner(llvm::Module *module, ReachabilityAnalysis *ra, ModRefAnalysis *mra);
+    Cloner(llvm::Module *module, ReachabilityAnalysis *ra);
 
     ~Cloner();
 
@@ -56,10 +56,10 @@ private:
 
     ValueTranslationMap *buildReversedMap(llvm::ValueToValueMapTy *vmap);
 
+    llvm::Module *module;
+    ReachabilityAnalysis *ra;
     FunctionMap functionMap;
     CloneInfoMap cloneInfoMap;
-
-    /* it is here for deubg purposes only */
     ReachabilityMap reachabilityMap;
 };
 

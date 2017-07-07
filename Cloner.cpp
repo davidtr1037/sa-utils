@@ -19,11 +19,9 @@
 using namespace std;
 using namespace llvm;
 
-Cloner::Cloner(llvm::Module *module, ReachabilityAnalysis *ra, ModRefAnalysis *mra) :
+Cloner::Cloner(llvm::Module *module, ReachabilityAnalysis *ra) :
     module(module),
-    ra(ra),
-    mra(mra),
-    targets(mra->getTargets())
+    ra(ra)
 {
 
 }
