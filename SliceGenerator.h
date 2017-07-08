@@ -21,16 +21,15 @@ public:
         llvm::Module *module,
         AAPass *aa,
         ModRefAnalysis *mra,
-        Annotator *annotator,
         Cloner *cloner,
         bool lazyMode = false
     ) :
         module(module), 
         aa(aa), 
         mra(mra), 
-        annotator(annotator),
         cloner(cloner),
         lazyMode(lazyMode),
+        annotator(0),
         llvmpta(0)
     {
 
@@ -53,9 +52,9 @@ private:
     llvm::Module *module;
     AAPass *aa;
     ModRefAnalysis *mra;
-    Annotator *annotator;
     Cloner *cloner;
     bool lazyMode;
+    Annotator *annotator;
     dg::LLVMPointerAnalysis *llvmpta;
 };
 

@@ -22,7 +22,6 @@
 #include "Inliner.h"
 #include "AAPass.h"
 #include "ModRefAnalysis.h"
-#include "Annotator.h"
 #include "Cloner.h"
 #include "Slicer.h"
 #include "SliceGenerator.h"
@@ -63,9 +62,8 @@ int main(int argc, char *argv[]) {
     AAPass *aa = new AAPass();
     aa->setPAType(PointerAnalysis::Andersen_WPA);
     ModRefAnalysis *mra = new ModRefAnalysis(module, ra, aa, "main", targets);
-    Annotator *annotator = new Annotator(module, mra);
     Cloner *cloner = new Cloner(module, ra);
-    SliceGenerator *sg = new SliceGenerator(module, aa, mra, annotator, cloner);
+    SliceGenerator *sg = new SliceGenerator(module, aa, mra, cloner);
 
     ra->run();
     inliner->run();
@@ -73,7 +71,6 @@ int main(int argc, char *argv[]) {
     pm.add(aa);
     pm.run(*module);
     mra->run();
-    annotator->annotate();
     sg->generate();
 
     return 0;

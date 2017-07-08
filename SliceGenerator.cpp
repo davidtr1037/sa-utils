@@ -19,6 +19,10 @@ using namespace llvm;
 using namespace dg;
 
 void SliceGenerator::generate() {
+	/* add annotations for slicing */
+	annotator = new Annotator(module, mra);
+	annotator->annotate();
+
     /* notes:
        - UNKNOWN_OFFSET: field sensitive (not sure if this flag changes anything...)
        - main: we need the nodes of the whole program
