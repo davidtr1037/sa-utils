@@ -11,7 +11,6 @@
 #include <llvm/Transforms/Utils/ValueMapper.h>
 
 #include "ReachabilityAnalysis.h"
-#include "ModRefAnalysis.h"
 
 class Cloner {
 public:

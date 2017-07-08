@@ -9,11 +9,11 @@
 #include <llvm/IR/Instructions.h>
 #include <llvm/Support/InstIterator.h>
 #include <llvm/Support/ValueHandle.h>
+#include <llvm/Support/raw_os_ostream.h>
 #include <llvm/Transforms/Utils/Cloning.h>
 #include <llvm/Transforms/Utils/ValueMapper.h>
 
 #include "ReachabilityAnalysis.h"
-#include "ModRefAnalysis.h"
 #include "Cloner.h"
 
 using namespace std;

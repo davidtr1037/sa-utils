@@ -64,7 +64,7 @@ int main(int argc, char *argv[]) {
     aa->setPAType(PointerAnalysis::Andersen_WPA);
     ModRefAnalysis *mra = new ModRefAnalysis(module, ra, aa, "main", targets);
     Annotator *annotator = new Annotator(module, mra);
-    Cloner *cloner = new Cloner(module, ra, mra);
+    Cloner *cloner = new Cloner(module, ra);
     SliceGenerator *sg = new SliceGenerator(module, aa, mra, annotator, cloner);
 
     ra->run();
@@ -74,9 +74,7 @@ int main(int argc, char *argv[]) {
     pm.run(*module);
     mra->run();
     annotator->annotate();
-    cloner->run();
     sg->generate();
-    sg->dumpSlices();
 
     return 0;
 }
