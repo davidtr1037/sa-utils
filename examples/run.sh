@@ -19,6 +19,7 @@ function run_file {
     slice=$2
     run_klee ${file} ${slice} dfs
     run_klee ${file} ${slice} bfs
+    run_klee ${file} ${slice} random-state
     echo "${file}: OK"
 }
 
