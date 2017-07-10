@@ -42,11 +42,6 @@ public:
 
     llvm::Value *translateValue(llvm::Value *);
 
-    bool getReachableFunctions(
-        llvm::Function *f,
-        std::set<llvm::Function *> &functions
-    );
-
 private:
 
     void cloneFunction(llvm::Function *f, uint32_t sliceId);
@@ -57,7 +52,6 @@ private:
     ReachabilityAnalysis *ra;
     FunctionMap functionMap;
     CloneInfoMap cloneInfoMap;
-    ReachabilityMap reachabilityMap;
 };
 
 #endif

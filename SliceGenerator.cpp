@@ -81,10 +81,7 @@ void SliceGenerator::generateSlice(Function *f, uint32_t sliceId, ModRefAnalysis
 }
 
 void SliceGenerator::markAsSliced(Function *sliceEntry, uint32_t sliceId) {
-    set<Function *> reachable;
-    if (!cloner->getReachableFunctions(sliceEntry, reachable)) {
-        assert(false);
-    }
+    set<Function *> &reachable = ra->getReachableFunctions(sliceEntry);
 
     /* mark all reachable functions as sliced... */
     for (set<Function *>::iterator i = reachable.begin(); i != reachable.end(); i++) {
@@ -107,8 +104,7 @@ void SliceGenerator::dumpSlice(Function *f, uint32_t sliceId, bool recursively) 
 
     set<Function *> functions;
     if (recursively) {
-        set<Function *> reachable;
-        cloner->getReachableFunctions(f, reachable);
+        set<Function *> &reachable = ra->getReachableFunctions(f);
         functions.insert(reachable.begin(), reachable.end());
     } else {
         functions.insert(f);

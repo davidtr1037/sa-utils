@@ -10,6 +10,7 @@
 #include "llvm/analysis/PointsTo/PointsTo.h"
 
 #include "AAPass.h"
+#include "ReachabilityAnalysis.h"
 #include "ModRefAnalysis.h"
 #include "Annotator.h"
 #include "Cloner.h"
@@ -19,12 +20,14 @@ public:
 
     SliceGenerator(
         llvm::Module *module,
+        ReachabilityAnalysis *ra,
         AAPass *aa,
         ModRefAnalysis *mra,
         Cloner *cloner,
         bool lazyMode = false
     ) :
         module(module), 
+        ra(ra),
         aa(aa), 
         mra(mra), 
         cloner(cloner),
@@ -50,6 +53,7 @@ private:
     void markAsSliced(llvm::Function *sliceEntry, uint32_t sliceId);
 
     llvm::Module *module;
+    ReachabilityAnalysis *ra;
     AAPass *aa;
     ModRefAnalysis *mra;
     Cloner *cloner;
