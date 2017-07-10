@@ -2,7 +2,9 @@
 #define REACHABILITYANALYSIS_H
 
 #include <stdio.h>
+#include <vector>
 #include <set>
+#include <map>
 
 #include <llvm/IR/Module.h>
 #include <llvm/IR/Function.h>

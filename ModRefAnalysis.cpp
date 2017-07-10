@@ -52,7 +52,6 @@ void ModRefAnalysis::run() {
         string name = *i;
         Function *f = module->getFunction(name);
         if (!f) {
-            /* TODO: just ignore this? (warning) */
             errs() << "function '" << name << "' is not found (or unreachable)\n";
             assert(false);
         }

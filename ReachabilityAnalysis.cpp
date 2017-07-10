@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <iostream>
+#include <vector>
 #include <stack>
 #include <set>
 
@@ -78,7 +79,7 @@ void ReachabilityAnalysis::computeReachableFunctions(
     Function *entry,
     FunctionSet &results
 ) {
-    std::stack<Function *> stack;
+    stack<Function *> stack;
     FunctionSet pushed;
 
     if (!entry) {
