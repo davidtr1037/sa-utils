@@ -121,7 +121,6 @@ bool ModRefAnalysis::getRetSliceId(llvm::Function *f, uint32_t &id) {
 void ModRefAnalysis::collectModInfo(Function *f) {
     std::stack<Function *> stack;
     std::set<Function *> pushed;
-    std::set<Function *> visited;
 
     stack.push(f);
     pushed.insert(f);
@@ -129,7 +128,6 @@ void ModRefAnalysis::collectModInfo(Function *f) {
     while (!stack.empty()) {
         Function *curr = stack.top();
         stack.pop();
-        visited.insert(curr);
 
         for (inst_iterator iter = inst_begin(curr); iter != inst_end(curr); iter++) {
             Instruction *inst = &*iter;
@@ -170,7 +168,7 @@ void ModRefAnalysis::addStore(Function *f, Instruction *store) {
         PAGNode *pagNode = aa->getPTA()->getPAG()->getPAGNode(nodeId);
         ObjPN *obj = dyn_cast<ObjPN>(pagNode);
         if (!obj) {
-            /* TODO: ... */
+            /* TODO: handle */
             assert(false);
         }
 
