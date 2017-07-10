@@ -446,12 +446,14 @@ bool Slicer::mark()
         "__VERIFIER_assume",
         "__VERIFIER_exit",
         "klee_assume",
+        "exit",
+        "llvm.va_start",
+        "llvm.va_end",
         NULL // termination
     };
 
     dg.getCallSites(sc, &callsites);
 
-    // do not slice __VERIFIER_assume at all
     // FIXME: do this optional
     /* TODO: add klee_* functions */
     slicer.keepFunctionUntouched("__VERIFIER_assume");
