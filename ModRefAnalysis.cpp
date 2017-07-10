@@ -75,10 +75,11 @@ void ModRefAnalysis::run() {
 
     /* debug */
     dumpModSetMap();
-    dumpLoadToStoreMap();
-    dumpLoadToModInfoMap();
-    dumpModInfoToStoreMap();
-    dumpModInfoToIdMap();
+    //dumpLoadToStoreMap();
+    //dumpLoadToModInfoMap();
+    //dumpModInfoToStoreMap();
+    //dumpModInfoToIdMap();
+    //dumpOverridingStores();
 }
 
 ModRefAnalysis::ModInfoToStoreMap &ModRefAnalysis::getModInfoToStoreMap() {
@@ -117,35 +118,16 @@ bool ModRefAnalysis::getRetSliceId(llvm::Function *f, uint32_t &id) {
     return true;
 }
 
-void ModRefAnalysis::collectModInfo(Function *f) {
-    std::stack<Function *> stack;
-    std::set<Function *> pushed;
+void ModRefAnalysis::collectModInfo(Function *entry) {
+    std::set<Function *> &reachable = ra->getReachableFunctions(entry);
 
-    stack.push(f);
-    pushed.insert(f);
-
-    while (!stack.empty()) {
-        Function *curr = stack.top();
-        stack.pop();
-
-        for (inst_iterator iter = inst_begin(curr); iter != inst_end(curr); iter++) {
-            Instruction *inst = &*iter;
-            if (inst->getOpcode() == Instruction::Call) {
-                CallInst *callInst = dyn_cast<CallInst>(inst);
-                std::set<Function *> targets;
-                ra->getCallTargets(callInst, targets);
-                for (std::set<Function *>::iterator i = targets.begin(); i != targets.end(); i++) {
-                    Function *target = *i;
-                    if (target->isDeclaration()) {
-                        continue;
-                    }
-
-                    if (pushed.find(target) == pushed.end()) {
-                        stack.push(target);
-                        pushed.insert(target);
-                    }
-                }
-            }
+    for (std::set<Function *>::iterator i = reachable.begin(); i != reachable.end(); i++) {
+        Function *f = *i;
+        if (f->isDeclaration()) {
+            continue;
+        }
+        for (inst_iterator j = inst_begin(f); j != inst_end(f); j++) {
+            Instruction *inst = &*j;
             if (inst->getOpcode() == Instruction::Store) {
                 addStore(f, inst);
             } 
@@ -180,58 +162,23 @@ void ModRefAnalysis::addStore(Function *f, Instruction *store) {
     }
 }
 
-/* TODO: find a better name... */
 void ModRefAnalysis::collectRefInfo(Function *entry) {
-    std::stack<BasicBlock *> stack;
-    std::set<BasicBlock *> visited;
-    bool ignore = false;
-    
-    BasicBlock *initial_bb = entry->begin();
-    stack.push(initial_bb);
+    std::set<Function *> &reachable = ra->getReachableFunctions(entry);
 
-    while (!stack.empty()) {
-        BasicBlock *bb = stack.top();
-        stack.pop();
-
-        /* look for references */
-        for (BasicBlock::iterator i = bb->begin(); i != bb->end(); i++) {
-            Instruction *inst = &(*i);
-            /* process only the instructions after the call */
-            if (!ignore) {
-                if (inst->getOpcode() == Instruction::Call) {
-                    CallInst *callInst = dyn_cast<CallInst>(inst);
-                    std::set<Function *> targets;
-                    ra->getCallTargets(callInst, targets);
-                    for (std::set<Function *>::iterator i = targets.begin(); i != targets.end(); i++) {
-                        Function *target = *i;
-                        if (target->isDeclaration()) {
-                            continue;
-                        }
-
-                        BasicBlock *targetBB = target->begin();
-                        if (visited.find(targetBB) == visited.end()) {
-                            stack.push(targetBB);
-                        }
-                    }
-                }
-                if (inst->getOpcode() == Instruction::Load) {
-                    addLoad(inst);
-                }
-                if (inst->getOpcode() == Instruction::Store) {
-                    addOverridingStore(inst);
-                }
+    for (std::set<Function *>::iterator i = reachable.begin(); i != reachable.end(); i++) {
+        Function *f = *i;
+        if (f->isDeclaration()) {
+            continue;
+        }
+        for (inst_iterator j = inst_begin(f); j != inst_end(f); j++) {
+            Instruction *inst = &*j;
+            if (inst->getOpcode() == Instruction::Load) {
+                addLoad(inst);
+            }
+            if (inst->getOpcode() == Instruction::Store) {
+                addOverridingStore(inst);
             }
         }
-
-        for (unsigned int i = 0; i < bb->getTerminator()->getNumSuccessors(); i++) {
-            BasicBlock *successor = bb->getTerminator()->getSuccessor(i);
-            if (visited.find(successor) == visited.end()) {
-                stack.push(successor);
-            }
-        }
-        
-        /* mark as visited */
-        visited.insert(bb);
     }
 }
 
