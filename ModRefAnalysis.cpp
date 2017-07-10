@@ -1,5 +1,8 @@
 #include <stdio.h>
 #include <iostream>
+#include <vector>
+#include <set>
+#include <map>
 
 #include <llvm/IR/Module.h>
 #include <llvm/IR/DataLayout.h>
@@ -25,8 +28,8 @@ ModRefAnalysis::ModRefAnalysis(
     llvm::Module *module,
     ReachabilityAnalysis *ra,
     AAPass *aa,
-    std::string entry,
-    std::vector<std::string> targets
+    string entry,
+    vector<string> targets
 ) :
     module(module), ra(ra), aa(aa), entry(entry), targets(targets)
 {
@@ -119,9 +122,9 @@ bool ModRefAnalysis::getRetSliceId(llvm::Function *f, uint32_t &id) {
 }
 
 void ModRefAnalysis::collectModInfo(Function *entry) {
-    std::set<Function *> &reachable = ra->getReachableFunctions(entry);
+    set<Function *> &reachable = ra->getReachableFunctions(entry);
 
-    for (std::set<Function *>::iterator i = reachable.begin(); i != reachable.end(); i++) {
+    for (set<Function *>::iterator i = reachable.begin(); i != reachable.end(); i++) {
         Function *f = *i;
         if (f->isDeclaration()) {
             continue;
@@ -163,9 +166,9 @@ void ModRefAnalysis::addStore(Function *f, Instruction *store) {
 }
 
 void ModRefAnalysis::collectRefInfo(Function *entry) {
-    std::set<Function *> &reachable = ra->getReachableFunctions(entry);
+    set<Function *> &reachable = ra->getReachableFunctions(entry);
 
-    for (std::set<Function *>::iterator i = reachable.begin(); i != reachable.end(); i++) {
+    for (set<Function *>::iterator i = reachable.begin(); i != reachable.end(); i++) {
         Function *f = *i;
         if (f->isDeclaration()) {
             continue;
@@ -309,7 +312,7 @@ ModRefAnalysis::AllocSite ModRefAnalysis::getAllocSite(NodeID nodeId) {
         offset = gepObj->getLocationSet().getAccOffset(); 
     }
 
-    return std::make_pair(allocSite, offset);
+    return make_pair(allocSite, offset);
 }
 
 bool ModRefAnalysis::hasReturnValue(Function *f) {
@@ -327,7 +330,7 @@ AliasAnalysis::Location ModRefAnalysis::getStoreLocation(StoreInst *inst) {
 }
 
 /* TODO: validate that a load can't have two ModInfo's with the same allocation site */
-void ModRefAnalysis::getApproximateModInfos(Instruction *inst, AllocSite hint, std::set<ModInfo> &result) {
+void ModRefAnalysis::getApproximateModInfos(Instruction *inst, AllocSite hint, set<ModInfo> &result) {
     assert(inst->getOpcode() == Instruction::Load);
 
     LoadToModInfoMap::iterator entry = loadToModInfoMap.find(inst);
@@ -336,9 +339,9 @@ void ModRefAnalysis::getApproximateModInfos(Instruction *inst, AllocSite hint, s
         assert(false);
     }
 
-    std::set<ModInfo> &modifiers = entry->second;
+    set<ModInfo> &modifiers = entry->second;
 
-    for (std::set<ModInfo>::iterator i = modifiers.begin(); i != modifiers.end(); i++) {
+    for (set<ModInfo>::iterator i = modifiers.begin(); i != modifiers.end(); i++) {
         ModInfo modInfo = *i;
         AllocSite allocSite = modInfo.second;
 
