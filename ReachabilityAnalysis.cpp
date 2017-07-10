@@ -17,17 +17,69 @@
 using namespace std;
 using namespace llvm;
 
-void ReachabilityAnalysis::run() {
+bool ReachabilityAnalysis::run() {
+    vector<Function *> all;
+
+    /* check parameters... */
+    entryFunction = module->getFunction(entry);
+    if (!entryFunction) {
+        errs() << "entry function '" << entry << "' is not found\n";
+        return false;
+    }
+    all.push_back(entryFunction);
+
+    for (vector<string>::iterator i = targets.begin(); i != targets.end(); i++) {
+        string name = *i;
+        Function *f = module->getFunction(name);
+        if (!f) {
+            errs() << "function '" << name << "' is not found\n";
+            return false;
+        }
+        targetFunctions.push_back(f);
+        all.push_back(f);
+    }
+
     /* collect function type map for indirect calls */
     computeFunctionTypeMap();
-    computeReachableFunctions(getEntryPoint(), reachable);
-    removeUnreachableFunctions();
+
+    /* build reachability map */
+    for (vector<Function *>::iterator i = all.begin(); i != all.end(); i++) {
+        updateReachabilityMap(*i);
+    }
+
+    /* remove... */
+    if (!removeUnreachableFunctions()) {
+        return false;
+    }
+
+    /* debug */
     dumpReachableFunctions();
+
+    return true;
 }
 
-void ReachabilityAnalysis::computeReachableFunctions(Function *entry, std::set<Function *> &results) {
+void ReachabilityAnalysis::computeFunctionTypeMap() {
+    for (Module::iterator i = module->begin(); i != module->end(); i++) {
+        /* add functions which may be virtual */
+        Function *f = &*i;
+        if (isVirtual(f)) {
+            FunctionType *type = f->getFunctionType();
+            functionTypeMap[type].insert(f);
+        }
+    }
+}
+
+void ReachabilityAnalysis::updateReachabilityMap(Function *f) {
+    FunctionSet &functions = reachabilityMap[f];
+    computeReachableFunctions(f, functions);
+}
+
+void ReachabilityAnalysis::computeReachableFunctions(
+    Function *entry,
+    FunctionSet &results
+) {
     std::stack<Function *> stack;
-    std::set<Function *> pushed;
+    FunctionSet pushed;
 
     if (!entry) {
         return;
@@ -50,10 +102,10 @@ void ReachabilityAnalysis::computeReachableFunctions(Function *entry, std::set<F
             CallInst *call_inst = dyn_cast<CallInst>(inst);
 
             /* potential call targets */
-            std::set<Function *> targets;
+            FunctionSet targets;
             getCallTargets(call_inst, targets);
 
-            for (std::set<Function *>::iterator i = targets.begin(); i != targets.end(); i++) {
+            for (FunctionSet::iterator i = targets.begin(); i != targets.end(); i++) {
                 Function *target = *i;
                 results.insert(target);
 
@@ -66,17 +118,6 @@ void ReachabilityAnalysis::computeReachableFunctions(Function *entry, std::set<F
                     pushed.insert(target);
                 }
             }
-        }
-    }
-}
-
-void ReachabilityAnalysis::computeFunctionTypeMap() {
-    for (Module::iterator i = module->begin(); i != module->end(); i++) {
-        /* add functions which may be virtual */
-        Function *f = &*i;
-        if (isVirtual(f)) {
-            FunctionType *type = f->getFunctionType();
-            functionTypeMap[type].insert(f); 
         }
     }
 }
@@ -102,11 +143,7 @@ bool ReachabilityAnalysis::isVirtual(Function *f) {
     return false;
 }
 
-Function *ReachabilityAnalysis::getEntryPoint() {
-    return module->getFunction(StringRef("main"));
-}
-
-void ReachabilityAnalysis::getCallTargets(CallInst *call_inst, std::set<Function *> &targets) {
+void ReachabilityAnalysis::getCallTargets(CallInst *call_inst, FunctionSet &targets) {
     Function *called_function = call_inst->getCalledFunction();
     Value *calledValue = call_inst->getCalledValue();
 
@@ -140,7 +177,7 @@ void ReachabilityAnalysis::getCallTargets(CallInst *call_inst, std::set<Function
         outs() << "\n";
 
         if (functionTypeMap.find(type) != functionTypeMap.end()) {
-            std::set<Function *> &functions = functionTypeMap.find(type)->second;
+            FunctionSet &functions = functionTypeMap.find(type)->second;
             targets.insert(functions.begin(), functions.end());
             outs() << functions.size() << " target functions" << "\n";
         }
@@ -172,27 +209,48 @@ Function *ReachabilityAnalysis::extractFunction(ConstantExpr *ce) {
     return NULL;
 }
 
-/* TODO: handle klee_* functions */
-void ReachabilityAnalysis::removeUnreachableFunctions() {
-    std::set<Function *> unreachable;
+ReachabilityAnalysis::FunctionSet &ReachabilityAnalysis::getReachableFunctions(Function *f) {
+    ReachabilityMap::iterator i = reachabilityMap.find(f);
+    if (i == reachabilityMap.end()) {
+        assert(false);
+    }
 
+    return i->second;
+}
+
+/* TODO: handle klee_* functions */
+bool ReachabilityAnalysis::removeUnreachableFunctions() {
+    /* get all reachable functions */
+    FunctionSet &reachable = getReachableFunctions(entryFunction);
+
+    /* find unreachable functions */
+    FunctionSet unreachable;
     for (Module::iterator i = module->begin(); i != module->end(); i++) {
         Function *f = &*i;
         if (reachable.find(f) == reachable.end()) {
+            if (reachabilityMap.find(f) != reachabilityMap.end()) {
+                /* TODO: warn about it... */
+                return false;
+            }
             unreachable.insert(f);
         }
     }
 
-    for (std::set<Function *>::iterator i = unreachable.begin(); i != unreachable.end(); i++) {
+    for (FunctionSet::iterator i = unreachable.begin(); i != unreachable.end(); i++) {
         Function *f = *i;
         f->replaceAllUsesWith(UndefValue::get(f->getType()));
         f->eraseFromParent();
     }
+
+    return true;
 }
 
 void ReachabilityAnalysis::dumpReachableFunctions() {
+    /* get all reachable functions */
+    FunctionSet &reachable = getReachableFunctions(entryFunction);
+
     outs() << "### " << reachable.size() << " reachable functions ###\n";
-    for (std::set<Function *>::iterator i = reachable.begin(); i != reachable.end(); i++) {
+    for (FunctionSet::iterator i = reachable.begin(); i != reachable.end(); i++) {
         Function *f = *i;
         outs() << "    " << f->getName() << "\n";
     }

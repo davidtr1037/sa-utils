@@ -45,6 +45,7 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
+    string entry = "main";
     vector<string> targets;
     for (unsigned int i = 2; i < argc; i++) {
         std::string slicedFunction = std::string(argv[i]);
@@ -57,11 +58,11 @@ int main(int argc, char *argv[]) {
 
     vector<string> inlineTargets;
 
-    ReachabilityAnalysis *ra = new ReachabilityAnalysis(module);
+    ReachabilityAnalysis *ra = new ReachabilityAnalysis(module, entry, targets);
     Inliner *inliner = new Inliner(module, ra, targets, inlineTargets);
     AAPass *aa = new AAPass();
     aa->setPAType(PointerAnalysis::Andersen_WPA);
-    ModRefAnalysis *mra = new ModRefAnalysis(module, ra, aa, "main", targets);
+    ModRefAnalysis *mra = new ModRefAnalysis(module, ra, aa, entry, targets);
     Cloner *cloner = new Cloner(module, ra);
     SliceGenerator *sg = new SliceGenerator(module, aa, mra, cloner);
 

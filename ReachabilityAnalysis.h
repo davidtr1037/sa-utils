@@ -12,17 +12,31 @@
 
 class ReachabilityAnalysis {
 public:
-    ReachabilityAnalysis(llvm::Module *module) : module(module) {
+
+    typedef std::set<llvm::Function *> FunctionSet;
+    typedef std::map<llvm::Function *, FunctionSet> ReachabilityMap;
+
+    ReachabilityAnalysis(
+		llvm::Module *module,
+		std::string entry,
+		std::vector<std::string> targets
+	) :
+		module(module),
+		entry(entry),
+		targets(targets)
+	{
 
     }
 
     ~ReachabilityAnalysis();
 
-    void run();
+    bool run();
 
-    void computeReachableFunctions(llvm::Function *entry, std::set<llvm::Function *> &results);
+    void computeReachableFunctions(llvm::Function *entry, FunctionSet &results);
 
-    void getCallTargets(llvm::CallInst *call_inst, std::set<llvm::Function *> &targets);
+    FunctionSet &getReachableFunctions(llvm::Function *f);
+
+    void getCallTargets(llvm::CallInst *call_inst, FunctionSet &targets);
 
     void dumpReachableFunctions();
 
@@ -30,17 +44,21 @@ private:
 
     void computeFunctionTypeMap();
 
+    void updateReachabilityMap(llvm::Function *f);
+
     bool isVirtual(llvm::Function *f);
 
     llvm::Function *extractFunction(llvm::ConstantExpr *ce);
 
-    void removeUnreachableFunctions();
-
-    llvm::Function *getEntryPoint();
+    bool removeUnreachableFunctions();
 
     llvm::Module *module;
-    std::map<llvm::FunctionType *, std::set<llvm::Function *> > functionTypeMap;
-    std::set<llvm::Function *> reachable;
+    std::string entry;
+    std::vector<std::string> targets;
+    llvm::Function *entryFunction;
+    std::vector<llvm::Function *> targetFunctions;
+    std::map<llvm::FunctionType *, FunctionSet> functionTypeMap;
+    ReachabilityMap reachabilityMap;
 };
 
 #endif /* REACHABILITYANALYSIS_H */
