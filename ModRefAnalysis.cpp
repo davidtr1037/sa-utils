@@ -162,12 +162,24 @@ void ModRefAnalysis::addStore(Function *f, Instruction *store) {
     PointsTo &pts = aa->getPTA()->getPts(id);
 
     PointsTo &modPts = modPtsMap[f];
-    modPts |= pts;
 
     for (PointsTo::iterator i = pts.begin(); i != pts.end(); ++i) {
         NodeID nodeId = *i;
-        pair<Function *, NodeID> k = make_pair(f, nodeId);
-        objToStoreMap[k].insert(store);
+
+        /* get allocation site */
+        PAGNode *pagNode = aa->getPTA()->getPAG()->getPAGNode(nodeId);
+        ObjPN *obj = dyn_cast<ObjPN>(pagNode);
+        if (!obj) {
+            /* TODO: ... */
+            assert(false);
+        }
+
+        /* TODO: check static objects? */
+        if (!obj->getMemObj()->isStack()) {
+            pair<Function *, NodeID> k = make_pair(f, nodeId);
+            objToStoreMap[k].insert(store);
+            modPts.set(nodeId);
+        }
     }
 }
 

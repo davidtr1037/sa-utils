@@ -67,7 +67,6 @@ void Inliner::inlineCalls(Function *f, vector<string> functions) {
         CallInst *callInst = *i;
 
         /* inline function call */
-        errs() << "inlining: "; callInst->print(errs()); errs() << "\n";
         InlineFunctionInfo ifi;
         assert(InlineFunction(callInst, ifi)); 
     }
