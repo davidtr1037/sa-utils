@@ -111,13 +111,24 @@ public:
 
 private:
 
+    typedef std::map<llvm::Function *, bool> ReachabilityCache;
+
     /* priate methods */
 
     void computeMod(llvm::Function *entry, llvm::Function *f);
 
     void collectModInfo(llvm::Function *f);
 
-    void addStore(llvm::Function *f, llvm::Instruction *store);
+    void addStore(
+        llvm::Function *entry,
+        llvm::Function *f,
+        llvm::Instruction *store
+    );
+
+    bool canIgnoreStackObject(
+        llvm::Function *entry,
+        const llvm::Value *value
+    );
 
     void collectRefInfo(llvm::Function *entry);
 
@@ -168,6 +179,8 @@ private:
     SideEffects sideEffects;
 
     InstructionSet overridingStores;
+
+    ReachabilityCache cache;
 };
 
 #endif

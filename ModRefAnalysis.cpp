@@ -129,16 +129,24 @@ void ModRefAnalysis::collectModInfo(Function *entry) {
         if (f->isDeclaration()) {
             continue;
         }
+
         for (inst_iterator j = inst_begin(f); j != inst_end(f); j++) {
             Instruction *inst = &*j;
             if (inst->getOpcode() == Instruction::Store) {
-                addStore(f, inst);
+                addStore(entry, f, inst);
             } 
         }
     }
+
+    /* we don't need it any more... */
+    cache.clear();
 }
 
-void ModRefAnalysis::addStore(Function *f, Instruction *store) {
+void ModRefAnalysis::addStore(
+    Function *entry,
+    Function *f,
+    Instruction *store
+) {
     AliasAnalysis::Location storeLocation = getStoreLocation(dyn_cast<StoreInst>(store));
     NodeID id = aa->getPTA()->getPAG()->getValueNode(storeLocation.Ptr);
     PointsTo &pts = aa->getPTA()->getPts(id);
@@ -157,12 +165,47 @@ void ModRefAnalysis::addStore(Function *f, Instruction *store) {
         }
 
         /* TODO: check static objects? */
-        if (!obj->getMemObj()->isStack()) {
-            pair<Function *, NodeID> k = make_pair(f, nodeId);
-            objToStoreMap[k].insert(store);
-            modPts.set(nodeId);
+        if (obj->getMemObj()->isStack()) {
+            const Value *value = obj->getMemObj()->getRefVal();
+            if (canIgnoreStackObject(entry, value)) {
+                continue;
+            }
         }
+
+        pair<Function *, NodeID> k = make_pair(f, nodeId);
+        objToStoreMap[k].insert(store);
+        modPts.set(nodeId);
     }
+}
+
+bool ModRefAnalysis::canIgnoreStackObject(
+    Function *entry,
+    const Value *value
+) {
+    bool result;
+    AllocaInst *alloca = dyn_cast<AllocaInst>((Value *)(value));
+    if (!alloca) {
+        return false;
+    }
+
+    /* get the allocating function */
+    Function *allocatingFunction = dyn_cast<Function>(alloca->getParent()->getParent());
+
+    ReachabilityCache::iterator i = cache.find(allocatingFunction);
+    if (i == cache.end()) {
+        /* check if the entry reachable from the allocating function */
+        set<Function *> reachable;
+        ra->computeReachableFunctions(allocatingFunction, reachable);
+
+        /* save result */
+        bool result = reachable.find(entry) != reachable.end();
+        cache.insert(make_pair(allocatingFunction, result));
+    } else {
+        result = i->second;
+    }
+
+    /* if reachable, then the stack object can't be ignored */
+    return !result;
 }
 
 void ModRefAnalysis::collectRefInfo(Function *entry) {
@@ -173,6 +216,7 @@ void ModRefAnalysis::collectRefInfo(Function *entry) {
         if (f->isDeclaration()) {
             continue;
         }
+
         for (inst_iterator j = inst_begin(f); j != inst_end(f); j++) {
             Instruction *inst = &*j;
             if (inst->getOpcode() == Instruction::Load) {
