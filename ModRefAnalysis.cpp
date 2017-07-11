@@ -133,7 +133,7 @@ void ModRefAnalysis::collectModInfo(Function *entry) {
         for (inst_iterator j = inst_begin(f); j != inst_end(f); j++) {
             Instruction *inst = &*j;
             if (inst->getOpcode() == Instruction::Store) {
-                addStore(entry, f, inst);
+                addStore(entry, inst);
             } 
         }
     }
@@ -143,7 +143,6 @@ void ModRefAnalysis::collectModInfo(Function *entry) {
 }
 
 void ModRefAnalysis::addStore(
-    Function *entry,
     Function *f,
     Instruction *store
 ) {
@@ -167,7 +166,7 @@ void ModRefAnalysis::addStore(
         /* TODO: check static objects? */
         if (obj->getMemObj()->isStack()) {
             const Value *value = obj->getMemObj()->getRefVal();
-            if (canIgnoreStackObject(entry, value)) {
+            if (canIgnoreStackObject(f, value)) {
                 continue;
             }
         }
@@ -179,7 +178,7 @@ void ModRefAnalysis::addStore(
 }
 
 bool ModRefAnalysis::canIgnoreStackObject(
-    Function *entry,
+    Function *f,
     const Value *value
 ) {
     bool result;
@@ -198,7 +197,7 @@ bool ModRefAnalysis::canIgnoreStackObject(
         ra->computeReachableFunctions(allocatingFunction, reachable);
 
         /* save result */
-        bool result = reachable.find(entry) != reachable.end();
+        bool result = reachable.find(f) != reachable.end();
         cache.insert(make_pair(allocatingFunction, result));
     } else {
         result = i->second;

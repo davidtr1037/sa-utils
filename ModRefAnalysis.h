@@ -120,13 +120,12 @@ private:
     void collectModInfo(llvm::Function *f);
 
     void addStore(
-        llvm::Function *entry,
         llvm::Function *f,
         llvm::Instruction *store
     );
 
     bool canIgnoreStackObject(
-        llvm::Function *entry,
+        llvm::Function *f,
         const llvm::Value *value
     );
 
