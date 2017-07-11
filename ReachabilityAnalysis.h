@@ -44,6 +44,10 @@ public:
 
 private:
 
+    void removeUnusedValues();
+
+    bool removeUnusedValues(bool &changed);
+
     void computeFunctionTypeMap();
 
     void updateReachabilityMap(llvm::Function *f);

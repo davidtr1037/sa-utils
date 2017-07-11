@@ -19,6 +19,9 @@ using namespace std;
 using namespace llvm;
 
 bool ReachabilityAnalysis::run() {
+    /* remove unused functions using fixpoint */
+    removeUnusedValues();
+
     vector<Function *> all;
 
     /* check parameters... */
@@ -48,15 +51,47 @@ bool ReachabilityAnalysis::run() {
         updateReachabilityMap(*i);
     }
 
-    /* remove... */
-    if (!removeUnreachableFunctions()) {
-        return false;
-    }
+    /* TODO: can cause problems in some cases... */
+    //if (!removeUnreachableFunctions()) {
+    //    return false;
+    //}
 
     /* debug */
     dumpReachableFunctions();
 
     return true;
+}
+
+void ReachabilityAnalysis::removeUnusedValues() {
+    bool changed;
+
+    do {
+        removeUnusedValues(changed);
+    } while (changed);
+}
+
+bool ReachabilityAnalysis::removeUnusedValues(bool &changed) {
+    std::set<Function *> functions;
+    set<string> keep;
+
+    keep.insert(entry);
+
+    for (Module::iterator i = module->begin(); i != module->end(); i++) {
+        Function *f = &*i;
+        if (keep.find(f->getName().str()) != keep.end()) {
+            continue;
+        }
+
+        if (f->hasNUses(0)) {
+            functions.insert(f);
+        }
+    }
+
+    for (Function *f : functions) {
+        f->eraseFromParent();
+    }
+
+    changed = !functions.empty();
 }
 
 void ReachabilityAnalysis::computeFunctionTypeMap() {
