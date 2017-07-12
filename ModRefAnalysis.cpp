@@ -197,7 +197,7 @@ bool ModRefAnalysis::canIgnoreStackObject(
         ra->computeReachableFunctions(allocatingFunction, reachable);
 
         /* save result */
-        bool result = reachable.find(f) != reachable.end();
+        result = reachable.find(f) != reachable.end();
         cache.insert(make_pair(allocatingFunction, result));
     } else {
         result = i->second;
