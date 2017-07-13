@@ -446,10 +446,10 @@ bool Slicer::mark()
     const char *sc[] = {
         "__VERIFIER_assume",
         "__VERIFIER_exit",
-        "klee_assume",
+        //"klee_assume",
         "exit",
-        "llvm.va_start",
-        "llvm.va_end",
+        //"llvm.va_start",
+        //"llvm.va_end",
         NULL // termination
     };
 
