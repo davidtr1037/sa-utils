@@ -66,8 +66,8 @@ int main(int argc, char *argv[]) {
     Cloner *cloner = new Cloner(module, ra);
     SliceGenerator *sg = new SliceGenerator(module, ra, aa, mra, cloner);
 
-    ra->run();
     inliner->run();
+    ra->run();
     legacy::PassManager pm;
     pm.add(aa);
     pm.run(*module);

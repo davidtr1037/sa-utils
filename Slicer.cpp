@@ -437,6 +437,7 @@ bool Slicer::mark()
         return 0; //createEmptyMain(M);
     }
 
+    /* TODO: check what happens with the slicing... */
     // we also do not want to remove any assumptions
     // about the code
     // FIXME: make it configurable and add control dependencies
