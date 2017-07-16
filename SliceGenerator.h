@@ -24,6 +24,7 @@ public:
         AAPass *aa,
         ModRefAnalysis *mra,
         Cloner *cloner,
+        llvm::raw_ostream &debugs,
         bool lazyMode = false
     ) :
         module(module), 
@@ -31,6 +32,7 @@ public:
         aa(aa), 
         mra(mra), 
         cloner(cloner),
+        debugs(debugs),
         lazyMode(lazyMode),
         annotator(0),
         llvmpta(0)
@@ -57,6 +59,7 @@ private:
     AAPass *aa;
     ModRefAnalysis *mra;
     Cloner *cloner;
+    llvm::raw_ostream &debugs;
     bool lazyMode;
     Annotator *annotator;
     dg::LLVMPointerAnalysis *llvmpta;

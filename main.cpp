@@ -14,6 +14,8 @@
 #include <llvm/Analysis/AliasAnalysis.h>
 #include <llvm/Support/SourceMgr.h> // for SMDiagnostic
 #include <llvm/Support/CommandLine.h>
+#include <llvm/Support/raw_ostream.h>
+#include <llvm/Support/FileSystem.h>
 
 #include <WPA/Andersen.h>
 #include <MemoryModel/PointerAnalysis.h>
@@ -58,13 +60,16 @@ int main(int argc, char *argv[]) {
 
     vector<string> inlineTargets;
 
-    ReachabilityAnalysis *ra = new ReachabilityAnalysis(module, entry, targets);
-    Inliner *inliner = new Inliner(module, ra, targets, inlineTargets);
+    std::string errInfo;
+    raw_fd_ostream debugs("/tmp/log", errInfo, sys::fs::F_None);
+
+    ReachabilityAnalysis *ra = new ReachabilityAnalysis(module, entry, targets, debugs);
+    Inliner *inliner = new Inliner(module, ra, targets, inlineTargets, debugs);
     AAPass *aa = new AAPass();
     aa->setPAType(PointerAnalysis::Andersen_WPA);
-    ModRefAnalysis *mra = new ModRefAnalysis(module, ra, aa, entry, targets);
-    Cloner *cloner = new Cloner(module, ra);
-    SliceGenerator *sg = new SliceGenerator(module, ra, aa, mra, cloner);
+    ModRefAnalysis *mra = new ModRefAnalysis(module, ra, aa, entry, targets, debugs);
+    Cloner *cloner = new Cloner(module, ra, debugs);
+    SliceGenerator *sg = new SliceGenerator(module, ra, aa, mra, cloner, debugs);
 
     inliner->run();
     ra->run();

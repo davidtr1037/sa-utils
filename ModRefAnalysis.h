@@ -10,6 +10,7 @@
 #include <llvm/IR/Module.h>
 #include <llvm/IR/Instruction.h>
 #include <llvm/Analysis/AliasAnalysis.h>
+#include <llvm/Support/raw_ostream.h>
 
 #include "ReachabilityAnalysis.h"
 #include "AAPass.h"
@@ -68,7 +69,8 @@ public:
         ReachabilityAnalysis *ra,
         AAPass *aa,
         std::string entry,
-        std::vector<std::string> targets
+        std::vector<std::string> targets,
+        llvm::raw_ostream &debugs
     );
 
     llvm::Function *getEntry();
@@ -180,6 +182,8 @@ private:
     InstructionSet overridingStores;
 
     ReachabilityCache cache;
+
+    llvm::raw_ostream &debugs;
 };
 
 #endif

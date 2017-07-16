@@ -208,14 +208,14 @@ void ReachabilityAnalysis::getCallTargets(CallInst *call_inst, FunctionSet &targ
             return;
         }
 
-        outs() << "indirect call: ";
-        type->print(outs());
-        outs() << "\n";
+        debugs << "indirect call: ";
+        type->print(debugs);
+        debugs << "\n";
 
         if (functionTypeMap.find(type) != functionTypeMap.end()) {
             FunctionSet &functions = functionTypeMap.find(type)->second;
             targets.insert(functions.begin(), functions.end());
-            outs() << functions.size() << " target functions" << "\n";
+            debugs << functions.size() << " target functions" << "\n";
         }
     } else {
         targets.insert(called_function);
@@ -285,10 +285,10 @@ void ReachabilityAnalysis::dumpReachableFunctions() {
     /* get all reachable functions */
     FunctionSet &reachable = getReachableFunctions(entryFunction);
 
-    outs() << "### " << reachable.size() << " reachable functions ###\n";
+    debugs << "### " << reachable.size() << " reachable functions ###\n";
     for (FunctionSet::iterator i = reachable.begin(); i != reachable.end(); i++) {
         Function *f = *i;
-        outs() << "    " << f->getName() << "\n";
+        debugs << "    " << f->getName() << "\n";
     }
-    outs() << "\n";
+    debugs << "\n";
 }

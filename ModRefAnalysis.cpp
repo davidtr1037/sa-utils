@@ -11,6 +11,7 @@
 #include <llvm/IR/Instruction.h>
 #include <llvm/Support/InstIterator.h>
 #include <llvm/Analysis/AliasAnalysis.h>
+#include <llvm/Support/raw_ostream.h>
 
 #include "MemoryModel/PointerAnalysis.h"
 #include "MSSA/MemRegion.h"
@@ -29,9 +30,10 @@ ModRefAnalysis::ModRefAnalysis(
     ReachabilityAnalysis *ra,
     AAPass *aa,
     string entry,
-    vector<string> targets
+    vector<string> targets,
+    llvm::raw_ostream &debugs
 ) :
-    module(module), ra(ra), aa(aa), entry(entry), targets(targets)
+    module(module), ra(ra), aa(aa), entry(entry), targets(targets), debugs(debugs)
 {
 
 }
@@ -398,7 +400,7 @@ void ModRefAnalysis::getApproximateModInfos(Instruction *inst, AllocSite hint, s
 }
 
 void ModRefAnalysis::dumpModSetMap() {
-    outs() << "### ModSetMap ###\n";
+    debugs << "### ModSetMap ###\n";
 
     for (ModSetMap::iterator i = modSetMap.begin(); i != modSetMap.end(); i++) {
         Function *f = i->first;
@@ -409,11 +411,11 @@ void ModRefAnalysis::dumpModSetMap() {
             dumpInst(inst);
         }
     }
-    outs() << "\n";
+    debugs << "\n";
 }
 
 void ModRefAnalysis::dumpLoadToStoreMap() {
-    outs() << "### LoadToStoreMap ###\n";
+    debugs << "### LoadToStoreMap ###\n";
 
     for (LoadToStoreMap::iterator i = loadToStoreMap.begin(); i != loadToStoreMap.end(); i++) {
         Instruction *load = i->first;
@@ -426,11 +428,11 @@ void ModRefAnalysis::dumpLoadToStoreMap() {
             dumpInst(store, "\t");
         }
     }
-    outs() << "\n";
+    debugs << "\n";
 }
 
 void ModRefAnalysis::dumpLoadToModInfoMap() {
-    outs() << "### LoadToModInfoMap ###\n";
+    debugs << "### LoadToModInfoMap ###\n";
 
     for (LoadToModInfoMap::iterator i = loadToModInfoMap.begin(); i != loadToModInfoMap.end(); i++) {
         Instruction *load = i->first;
@@ -442,11 +444,11 @@ void ModRefAnalysis::dumpLoadToModInfoMap() {
             dumpModInfo(modInfo, "\t");
         }
     }
-    outs() << "\n";
+    debugs << "\n";
 }
 
 void ModRefAnalysis::dumpModInfoToStoreMap() {
-    outs() << "### ModInfoToStoreMap ###\n";
+    debugs << "### ModInfoToStoreMap ###\n";
 
     for (ModInfoToStoreMap::iterator i = modInfoToStoreMap.begin(); i != modInfoToStoreMap.end(); i++) {
         const ModInfo &modInfo = i->first;
@@ -458,24 +460,24 @@ void ModRefAnalysis::dumpModInfoToStoreMap() {
             dumpInst(store, "\t");
         }
     }
-    outs() << "\n";
+    debugs << "\n";
 }
 
 void ModRefAnalysis::dumpModInfoToIdMap() {
-    outs() << "### ModInfoToIdMap ###\n";
+    debugs << "### ModInfoToIdMap ###\n";
 
     for (ModInfoToIdMap::iterator i = modInfoToIdMap.begin(); i != modInfoToIdMap.end(); i++) {
         const ModInfo &modInfo = i->first;
         uint32_t id = i->second;
         
         dumpModInfo(modInfo);
-        outs() << "id: " << id << "\n";
+        debugs << "id: " << id << "\n";
     }
-    outs() << "\n";
+    debugs << "\n";
 }
 
 void ModRefAnalysis::dumpOverridingStores() {
-    outs() << "### Overriding Stores ###\n";
+    debugs << "### Overriding Stores ###\n";
 
     for (InstructionSet::iterator j = overridingStores.begin(); j != overridingStores.end(); j++) {
         Instruction *inst = *j;
@@ -486,9 +488,9 @@ void ModRefAnalysis::dumpOverridingStores() {
 void ModRefAnalysis::dumpInst(Instruction *inst, const char *prefix) {
     Function *f = inst->getParent()->getParent();
 
-    outs() << prefix << "[" << f->getName() << "]";
-    inst->print(outs()); 
-    outs() << "\n";
+    debugs << prefix << "[" << f->getName() << "]";
+    inst->print(debugs);
+    debugs << "\n";
 }
 
 void ModRefAnalysis::dumpModInfo(const ModInfo &modInfo, const char *prefix) {
@@ -498,7 +500,7 @@ void ModRefAnalysis::dumpModInfo(const ModInfo &modInfo, const char *prefix) {
     const Value *value = allocSite.first;
     uint64_t offset = allocSite.second;
 
-    outs() << prefix << "function: " << f->getName() << "\n";
-    outs() << prefix << "allocation site: "; value->print(outs()); outs() << "\n";
-    outs() << prefix << "offset: " << offset << "\n";
+    debugs << prefix << "function: " << f->getName() << "\n";
+    debugs << prefix << "allocation site: "; value->print(debugs); debugs << "\n";
+    debugs << prefix << "offset: " << offset << "\n";
 }

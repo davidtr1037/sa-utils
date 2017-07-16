@@ -23,8 +23,7 @@ using namespace dg::analysis::pta;
 void SVFPointerAnalysis::run() {
     /* update virtual call related nodes */
     handleVirtualCalls();
-    outs() << "DG PTA nodes count: " << pta->getNodesMap().size() << "\n";
-    
+
     for (auto &v : pta->getNodesMap()) {
         PSNode *node = v.second.second;
         handleNode(node);
@@ -262,9 +261,6 @@ uint64_t SVFPointerAnalysis::getAllocNodeOffset(GepObjPN *node) {
     unsigned offset = ls.getOffset();
     /* offset in bytes */
     unsigned offsetInBytes = ls.getAccOffset();
-
-    //outs() << "GepObjNode location set: " << offset << "\n";
-    //outs() << "GepObjNode offset: " << offsetInBytes << "\n";
 
     const MemObj *mo = node->getMemObj();
     if (mo->isArray()) {

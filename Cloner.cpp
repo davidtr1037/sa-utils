@@ -12,6 +12,7 @@
 #include <llvm/Support/raw_os_ostream.h>
 #include <llvm/Transforms/Utils/Cloning.h>
 #include <llvm/Transforms/Utils/ValueMapper.h>
+#include <llvm/Support/raw_ostream.h>
 
 #include "ReachabilityAnalysis.h"
 #include "Cloner.h"
@@ -19,17 +20,17 @@
 using namespace std;
 using namespace llvm;
 
-Cloner::Cloner(llvm::Module *module, ReachabilityAnalysis *ra) :
+Cloner::Cloner(llvm::Module *module, ReachabilityAnalysis *ra, raw_ostream &debugs) :
     module(module),
-    ra(ra)
+    ra(ra),
+    debugs(debugs)
 {
-
 }
 
 void Cloner::clone(Function *f, uint32_t sliceId) {
     /* compute reachable functions only once */
     set<Function *> &reachable = ra->getReachableFunctions(f);
-    outs() << f->getName() << ": " << reachable.size() << " reachable functions\n";
+    debugs << f->getName() << ": " << reachable.size() << " reachable functions\n";
 
     for (set<Function *>::iterator j = reachable.begin(); j != reachable.end(); j++) {
         Function *f = *j;
@@ -37,7 +38,7 @@ void Cloner::clone(Function *f, uint32_t sliceId) {
             continue;
         }
 
-        outs() << "cloning: " << f->getName() << "\n";
+        debugs << "cloning: " << f->getName() << "\n";
         cloneFunction(f, sliceId);
     }
 }

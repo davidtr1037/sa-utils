@@ -118,7 +118,7 @@ void SliceGenerator::dumpSlice(Function *f, uint32_t sliceId, bool recursively) 
 
         sliceInfo = cloner->getSliceInfo(g, sliceId);
         if (sliceInfo->isSliced) {
-            sliceInfo->f->print(outs());
+            sliceInfo->f->print(debugs);
         }
     }
 }

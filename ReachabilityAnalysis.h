@@ -11,6 +11,7 @@
 #include <llvm/IR/Instruction.h>
 #include <llvm/IR/Instructions.h>
 #include <llvm/IR/Constants.h>
+#include <llvm/Support/raw_ostream.h>
 
 class ReachabilityAnalysis {
 public:
@@ -19,14 +20,16 @@ public:
     typedef std::map<llvm::Function *, FunctionSet> ReachabilityMap;
 
     ReachabilityAnalysis(
-		llvm::Module *module,
-		std::string entry,
-		std::vector<std::string> targets
-	) :
-		module(module),
-		entry(entry),
-		targets(targets)
-	{
+        llvm::Module *module,
+        std::string entry,
+        std::vector<std::string> targets,
+        llvm::raw_ostream &debugs
+    ) :
+        module(module),
+        entry(entry),
+        targets(targets),
+        debugs(debugs)
+    {
 
     }
 
@@ -65,6 +68,7 @@ private:
     std::vector<llvm::Function *> targetFunctions;
     std::map<llvm::FunctionType *, FunctionSet> functionTypeMap;
     ReachabilityMap reachabilityMap;
+    llvm::raw_ostream &debugs;
 };
 
 #endif /* REACHABILITYANALYSIS_H */

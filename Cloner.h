@@ -9,6 +9,7 @@
 #include <llvm/IR/Module.h>
 #include <llvm/IR/Function.h>
 #include <llvm/Transforms/Utils/ValueMapper.h>
+#include <llvm/Support/raw_ostream.h>
 
 #include "ReachabilityAnalysis.h"
 
@@ -30,7 +31,7 @@ public:
     typedef std::set<llvm::Function *> FunctionSet;
     typedef std::map<llvm::Function *, FunctionSet> ReachabilityMap;
 
-    Cloner(llvm::Module *module, ReachabilityAnalysis *ra);
+    Cloner(llvm::Module *module, ReachabilityAnalysis *ra, llvm::raw_ostream &debugs);
 
     ~Cloner();
 
@@ -52,6 +53,7 @@ private:
     ReachabilityAnalysis *ra;
     FunctionMap functionMap;
     CloneInfoMap cloneInfoMap;
+    llvm::raw_ostream &debugs;
 };
 
 #endif

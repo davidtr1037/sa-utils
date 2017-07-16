@@ -38,7 +38,7 @@ void AAPass::runPointerAnalysis(llvm::Module& module, u32_t kind) {
         _pta = new FlowSensitive();
         break;
     default:
-        llvm::outs() << "This pointer analysis has not been implemented yet.\n";
+        llvm::errs() << "This pointer analysis has not been implemented yet.\n";
         break;
     }
 

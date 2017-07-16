@@ -5,17 +5,25 @@
 #include <vector>
 
 #include <llvm/IR/Module.h>
+#include <llvm/Support/raw_ostream.h>
 
 #include "ReachabilityAnalysis.h"
 
 class Inliner {
 public:
 
-    Inliner(llvm::Module *module, ReachabilityAnalysis *ra, std::vector<std::string> targets, std::vector<std::string> functions) :
+    Inliner(
+        llvm::Module *module,
+        ReachabilityAnalysis *ra,
+        std::vector<std::string> targets,
+        std::vector<std::string> functions,
+        llvm::raw_ostream &debugs
+    ) :
         module(module),
         ra(ra),
         targets(targets),
-        functions(functions)
+        functions(functions),
+        debugs(debugs)
     {
 
     }
@@ -32,6 +40,7 @@ private:
     ReachabilityAnalysis *ra;
     std::vector<std::string> targets;
     std::vector<std::string> functions;
+    llvm::raw_ostream &debugs;
 };
 
 #endif /* INLINER_H */
