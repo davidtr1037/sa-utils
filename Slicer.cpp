@@ -346,7 +346,7 @@ int Slicer::run()
     }
 
     // remove unused from module, we don't need that
-    remove_unused_from_module_rec();
+    //remove_unused_from_module_rec();
 
     // build the dependence graph, so that we can dump it if desired
     if (!buildDG()) {
@@ -365,7 +365,7 @@ int Slicer::run()
 
     // remove unused from module again, since slicing
     // could and probably did make some other parts unused
-    remove_unused_from_module_rec();
+    //remove_unused_from_module_rec();
 
     // fix linkage of declared functions (if needs to be fixed)
     make_declarations_external();
