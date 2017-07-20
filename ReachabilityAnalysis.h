@@ -33,7 +33,7 @@ public:
 
     }
 
-    ~ReachabilityAnalysis();
+    ~ReachabilityAnalysis() {};
 
     bool run();
 

@@ -28,7 +28,7 @@ public:
 
     }
 
-    ~Inliner();
+    ~Inliner() {};
 
     void run();
 
