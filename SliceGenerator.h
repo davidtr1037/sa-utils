@@ -40,6 +40,8 @@ public:
 
     }
 
+    ~SliceGenerator();
+
     void generate();
 
     void generateSlice(

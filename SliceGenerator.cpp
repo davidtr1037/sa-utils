@@ -122,3 +122,7 @@ void SliceGenerator::dumpSlice(Function *f, uint32_t sliceId, bool recursively) 
         }
     }
 }
+
+SliceGenerator::~SliceGenerator() {
+    delete llvmpta;
+}
