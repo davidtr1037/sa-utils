@@ -43,9 +43,9 @@ void Annotator::annotateStore(Instruction *inst, uint32_t sliceId) {
     Value *pointerOperand = store->getPointerOperand();
 
     /* generate a unique argument name */
-    string *name = new string(string("__crit_arg_") + to_string(argId++));
+    string name = string("__crit_arg_") + to_string(argId++);
     /* insert load */
-    LoadInst *loadInst = new LoadInst(pointerOperand, name->data());
+    LoadInst *loadInst = new LoadInst(pointerOperand, name.data());
     loadInst->setAlignment(store->getAlignment());
     loadInst->insertAfter(inst);
 
