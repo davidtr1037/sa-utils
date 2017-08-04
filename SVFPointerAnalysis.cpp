@@ -83,19 +83,30 @@ void SVFPointerAnalysis::handleNode(PSNode *node) {
 }
 
 void SVFPointerAnalysis::handleVirtualCalls() {
-    std::vector<PSNode *> funcptr_nodes;
+    std::set<PSNode *> visited;
+    bool changed = true;
 
-    /* first, get all relevant nodes */
-    for (auto &v : pta->getNodesMap()) {
-        PSNode *node = v.second.second;
-        if (node->getType() != CALL_FUNCPTR) {
-            continue;
+    while (changed) {
+        std::set<PSNode *> discovered;
+        changed = false;
+
+        /* first, get all relevant nodes */
+        for (auto &v : pta->getNodesMap()) {
+            PSNode *node = v.second.second;
+            if (node->getType() != CALL_FUNCPTR) {
+                continue;
+            }
+
+            if (visited.find(node) == visited.end()) {
+                discovered.insert(node);
+                changed = true;
+            }
         }
-        funcptr_nodes.push_back(node);
-    }
 
-    for (PSNode *node : funcptr_nodes) {
-        handleFuncPtr(node);
+        for (PSNode *node : discovered) {
+            handleFuncPtr(node);
+            visited.insert(node);
+        }
     }
 }
 
@@ -145,29 +156,30 @@ bool SVFPointerAnalysis::functionPointerCall(PSNode *callsite, PSNode *called) {
         return false;
     }
 
-    const Function *F = called->getUserData<Function>();
-    const CallInst *CI = callsite->getUserData<CallInst>();
+    const Function *f = called->getUserData<Function>();
+    const CallInst *callInst = callsite->getUserData<CallInst>();
 
-    if (!llvmutils::callIsCompatible(F, CI))
-        return false;
+    /* TODO: make a partial compatability check */
+    //if (!llvmutils::callIsCompatible(F, CI))
+    //    return false;
 
-    if (F->size() == 0) {
+    if (f->size() == 0) {
         return callsite->getPairedNode()->addPointsTo(analysis::pta::PointerUnknown);
     }
 
-    std::pair<PSNode *, PSNode *> cf = pta->builder->createFuncptrCall(CI, F);
-    assert(cf.first && cf.second);
+    PSNodesSeq seq = pta->builder->createFuncptrCall(callInst, f);
+    assert(seq.first && seq.second);
 
-    PSNode *ret = callsite->getPairedNode();
-    ret->addOperand(cf.second);
+    PSNode *paired = callsite->getPairedNode();
+    paired->addOperand(seq.second);
 
-    if (callsite->successorsNum() == 1 && callsite->getSingleSuccessor() == ret) {
-        callsite->replaceSingleSuccessor(cf.first);
+    if (callsite->successorsNum() == 1 && callsite->getSingleSuccessor() == paired) {
+        callsite->replaceSingleSuccessor(seq.first);
     } else {
-        callsite->addSuccessor(cf.first);
+        callsite->addSuccessor(seq.first);
     }
 
-    cf.second->addSuccessor(ret);
+    seq.second->addSuccessor(paired);
 
     return true;
 }
