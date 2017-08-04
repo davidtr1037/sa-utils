@@ -88,6 +88,7 @@ bool ReachabilityAnalysis::removeUnusedValues(bool &changed) {
     }
 
     for (Function *f : functions) {
+        debugs << "erasing: " << f->getName() << "\n";
         f->eraseFromParent();
     }
 
