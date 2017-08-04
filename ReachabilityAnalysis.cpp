@@ -227,10 +227,7 @@ void ReachabilityAnalysis::getCallTargets(CallInst *call_inst, FunctionSet &targ
             return;
         }
 
-        debugs << "indirect call: ";
-        type->print(debugs);
-        debugs << "\n";
-
+        debugs << "indirect call: " << *call_inst << "\n";
         if (functionTypeMap.find(type) != functionTypeMap.end()) {
             FunctionSet &functions = functionTypeMap.find(type)->second;
             targets.insert(functions.begin(), functions.end());
