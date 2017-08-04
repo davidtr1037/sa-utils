@@ -101,6 +101,24 @@ void ReachabilityAnalysis::computeFunctionTypeMap() {
         if (isVirtual(f)) {
             FunctionType *type = f->getFunctionType();
             functionTypeMap[type].insert(f);
+
+            /* if a function pointer is casted, consider the casted type as well */
+            for (auto i = f->use_begin(); i != f->use_end(); i++) {
+                ConstantExpr *ce = dyn_cast<ConstantExpr>(*i);
+                if (ce && ce->isCast()) {
+                    PointerType *pointerType = dyn_cast<PointerType>(ce->getType());
+                    if (!pointerType) {
+                        continue;
+                    }
+
+                    FunctionType *castedType = dyn_cast<FunctionType>(pointerType->getElementType());
+                    if (!castedType) {
+                        continue;
+                    }
+
+                    functionTypeMap[castedType].insert(f);
+                }
+            }
         }
     }
 }
