@@ -448,8 +448,9 @@ bool Slicer::mark()
         "__VERIFIER_exit",
         //"klee_assume",
         "exit",
-        //"llvm.va_start",
-        //"llvm.va_end",
+        /* these are needed, otherwise vprintf crashes... */
+        "llvm.va_start",
+        "llvm.va_end",
         NULL // termination
     };
 
