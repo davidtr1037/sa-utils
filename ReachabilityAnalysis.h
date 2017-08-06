@@ -18,6 +18,7 @@ public:
 
     typedef std::set<llvm::Function *> FunctionSet;
     typedef std::map<llvm::Function *, FunctionSet> ReachabilityMap;
+    typedef std::map<llvm::FunctionType *, FunctionSet> FunctionTypeMap;
 
     ReachabilityAnalysis(
         llvm::Module *module,
@@ -66,7 +67,7 @@ private:
     std::vector<std::string> targets;
     llvm::Function *entryFunction;
     std::vector<llvm::Function *> targetFunctions;
-    std::map<llvm::FunctionType *, FunctionSet> functionTypeMap;
+    FunctionTypeMap functionTypeMap;
     ReachabilityMap reachabilityMap;
     llvm::raw_ostream &debugs;
 };
