@@ -419,6 +419,9 @@ bool Slicer::mark()
     got_slicing_criterion = true;
     if (!ret) {
         errs() << "Did not find slicing criterion\n";
+        for (std::string c : criterions) {
+          errs() << "  - " << c << "\n";
+        }
         got_slicing_criterion = false;
     }
 
