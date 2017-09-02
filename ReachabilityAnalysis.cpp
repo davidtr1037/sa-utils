@@ -63,26 +63,28 @@ void ReachabilityAnalysis::computeFunctionTypeMap() {
     for (Module::iterator i = module->begin(); i != module->end(); i++) {
         /* add functions which may be virtual */
         Function *f = &*i;
-        if (isVirtual(f)) {
-            FunctionType *type = f->getFunctionType();
-            functionTypeMap[type].insert(f);
+        if (!isVirtual(f)) {
+            continue;
+        }
 
-            /* if a function pointer is casted, consider the casted type as well */
-            for (auto i = f->use_begin(); i != f->use_end(); i++) {
-                ConstantExpr *ce = dyn_cast<ConstantExpr>(*i);
-                if (ce && ce->isCast()) {
-                    PointerType *pointerType = dyn_cast<PointerType>(ce->getType());
-                    if (!pointerType) {
-                        continue;
-                    }
+        FunctionType *type = f->getFunctionType();
+        functionTypeMap[type].insert(f);
 
-                    FunctionType *castedType = dyn_cast<FunctionType>(pointerType->getElementType());
-                    if (!castedType) {
-                        continue;
-                    }
-
-                    functionTypeMap[castedType].insert(f);
+        /* if a function pointer is casted, consider the casted type as well */
+        for (auto i = f->use_begin(); i != f->use_end(); i++) {
+            ConstantExpr *ce = dyn_cast<ConstantExpr>(*i);
+            if (ce && ce->isCast()) {
+                PointerType *pointerType = dyn_cast<PointerType>(ce->getType());
+                if (!pointerType) {
+                    continue;
                 }
+
+                FunctionType *castedType = dyn_cast<FunctionType>(pointerType->getElementType());
+                if (!castedType) {
+                    continue;
+                }
+
+                functionTypeMap[castedType].insert(f);
             }
         }
     }
@@ -153,11 +155,11 @@ void ReachabilityAnalysis::computeReachableFunctions(
                 continue;
             }
 
-            CallInst *call_inst = dyn_cast<CallInst>(inst);
+            CallInst *callInst = dyn_cast<CallInst>(inst);
 
             /* potential call targets */
             FunctionSet targets;
-            getCallTargets(call_inst, usePA, targets);
+            getCallTargets(callInst, usePA, targets);
 
             for (FunctionSet::iterator i = targets.begin(); i != targets.end(); i++) {
                 Function *target = *i;
@@ -179,14 +181,14 @@ void ReachabilityAnalysis::computeReachableFunctions(
 bool ReachabilityAnalysis::isVirtual(Function *f) {
     for (Value::use_iterator i = f->use_begin(); i != f->use_end(); i++) {
         Value *use = *i;
-        CallInst *call_inst = dyn_cast<CallInst>(use);
-        if (!call_inst) {
+        CallInst *callInst = dyn_cast<CallInst>(use);
+        if (!callInst) {
             /* we found a use which is not a call instruction */
             return true;
         }
 
-        for (unsigned int j = 0; j < call_inst->getNumArgOperands(); j++) {
-            Value *arg = call_inst->getArgOperand(j);
+        for (unsigned int j = 0; j < callInst->getNumArgOperands(); j++) {
+            Value *arg = callInst->getArgOperand(j);
             if (isa<Function>(arg)) {
                 if (arg == f) {
                     /* the function is passed as an argument */
@@ -200,14 +202,14 @@ bool ReachabilityAnalysis::isVirtual(Function *f) {
 }
 
 void ReachabilityAnalysis::getCallTargets(
-    CallInst *call_inst,
+    CallInst *callInst,
     bool usePA,
     FunctionSet &targets
 ) {
-    Function *called_function = call_inst->getCalledFunction();
-    Value *calledValue = call_inst->getCalledValue();
+    Function *calledFunction = callInst->getCalledFunction();
+    Value *calledValue = callInst->getCalledValue();
 
-    if (!called_function) {
+    if (!calledFunction) {
         /* the called value should be one of these: function pointer, cast, alias */
         if (isa<ConstantExpr>(calledValue)) {
             Function *extracted = extractFunction(dyn_cast<ConstantExpr>(calledValue));
@@ -215,14 +217,14 @@ void ReachabilityAnalysis::getCallTargets(
                 /* TODO: unexpected value... */
                 assert(false);
             }
-            called_function = extracted;
+            calledFunction = extracted;
         }
     }
 
-    if (called_function == NULL) {
+    if (calledFunction == NULL) {
         /* the called value should be a function pointer */
-        Type *called_type = call_inst->getOperand(call_inst->getNumOperands() - 1)->getType();
-        Type *elementType = dyn_cast<PointerType>(called_type)->getElementType();
+        Type *calledType = callInst->getOperand(callInst->getNumOperands() - 1)->getType();
+        Type *elementType = dyn_cast<PointerType>(calledType)->getElementType();
         if (!elementType) {
             return;
         }
@@ -238,7 +240,7 @@ void ReachabilityAnalysis::getCallTargets(
             targets.insert(functions.begin(), functions.end());
         }
     } else {
-        targets.insert(called_function);
+        targets.insert(calledFunction);
     }
 }
 
