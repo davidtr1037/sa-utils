@@ -218,24 +218,68 @@ void ReachabilityAnalysis::getCallTargets(
 
     if (calledFunction == NULL) {
         /* the called value should be a function pointer */
-        Type *calledType = callInst->getOperand(callInst->getNumOperands() - 1)->getType();
-        Type *elementType = dyn_cast<PointerType>(calledType)->getElementType();
-        if (!elementType) {
-            return;
-        }
-
-        FunctionType *type = dyn_cast<FunctionType>(elementType);
-        if (!type) {
-            return;
-        }
-
-        FunctionTypeMap::iterator i = functionTypeMap.find(type);
-        if (i != functionTypeMap.end()) {
-            FunctionSet &functions = i->second;
-            targets.insert(functions.begin(), functions.end());
+        if (usePA && aa) {
+            resolveIndirectCallByPA(calledValue, targets);
+        } else {
+            Type *calledType = calledValue->getType();
+            resolveIndirectCallByType(calledType, targets);
         }
     } else {
         targets.insert(calledFunction);
+    }
+}
+
+void ReachabilityAnalysis::resolveIndirectCallByType(Type *calledType, FunctionSet &targets) {
+    if (!isa<PointerType>(calledType)) {
+        return;
+    }
+
+    Type *elementType = dyn_cast<PointerType>(calledType)->getElementType();
+    if (!elementType) {
+        return;
+    }
+
+    if (!isa<FunctionType>(elementType)) {
+        return;
+    }
+
+    FunctionType *functionType = dyn_cast<FunctionType>(elementType);
+    FunctionTypeMap::iterator i = functionTypeMap.find(functionType);
+    if (i != functionTypeMap.end()) {
+        FunctionSet &functions = i->second;
+        targets.insert(functions.begin(), functions.end());
+    }
+}
+
+void ReachabilityAnalysis::resolveIndirectCallByPA(Value *calledValue, FunctionSet &targets) {
+    if (!calledValue) {
+        return;
+    }
+
+    if (!aa->getPTA()->getPAG()->hasValueNode(calledValue)) {
+        debugs << "WARNING: no PAG node for: " << *calledValue << "\n";
+        return;
+    }
+
+    NodeID id = aa->getPTA()->getPAG()->getValueNode(calledValue);
+    PointsTo &pts = aa->getPTA()->getPts(id);
+
+    if (pts.empty()) {
+        debugs << "WARNING: no points-to for: " << *calledValue << "\n";
+        return;
+    }
+
+    for (PointsTo::iterator i = pts.begin(); i != pts.end(); ++i) {
+        NodeID node_id = *i;
+        PAGNode *pagNode = aa->getPTA()->getPAG()->getPAGNode(node_id);
+        if (isa<ObjPN>(pagNode)) {
+            ObjPN *obj = dyn_cast<ObjPN>(pagNode);
+            const Value *value = obj->getMemObj()->getRefVal();
+            if (isa<Function>(value)) {
+                const Function *f = dyn_cast<const Function>(value);
+                targets.insert((Function *)(f));
+            }
+        }
     }
 }
 
