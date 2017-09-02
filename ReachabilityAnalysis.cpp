@@ -13,48 +13,17 @@
 #include <llvm/Support/InstIterator.h>
 #include <llvm/Support/raw_ostream.h>
 
+#include "AAPass.h"
 #include "ReachabilityAnalysis.h"
 
 using namespace std;
 using namespace llvm;
 
-bool ReachabilityAnalysis::run() {
+void ReachabilityAnalysis::prepare() {
     /* remove unused functions using fixpoint */
     removeUnusedValues();
-
-    vector<Function *> all;
-
-    /* check parameters... */
-    entryFunction = module->getFunction(entry);
-    if (!entryFunction) {
-        errs() << "entry function '" << entry << "' is not found\n";
-        return false;
-    }
-    all.push_back(entryFunction);
-
-    for (vector<string>::iterator i = targets.begin(); i != targets.end(); i++) {
-        string name = *i;
-        Function *f = module->getFunction(name);
-        if (!f) {
-            errs() << "function '" << name << "' is not found\n";
-            return false;
-        }
-        targetFunctions.push_back(f);
-        all.push_back(f);
-    }
-
     /* compute function type map for resolving indirect calls */
     computeFunctionTypeMap();
-
-    /* build reachability map */
-    for (vector<Function *>::iterator i = all.begin(); i != all.end(); i++) {
-        updateReachabilityMap(*i);
-    }
-
-    /* debug */
-    dumpReachableFunctions();
-
-    return true;
 }
 
 void ReachabilityAnalysis::removeUnusedValues() {
@@ -117,6 +86,39 @@ void ReachabilityAnalysis::computeFunctionTypeMap() {
             }
         }
     }
+}
+
+bool ReachabilityAnalysis::run() {
+    vector<Function *> all;
+
+    /* check parameters... */
+    entryFunction = module->getFunction(entry);
+    if (!entryFunction) {
+        errs() << "entry function '" << entry << "' is not found\n";
+        return false;
+    }
+    all.push_back(entryFunction);
+
+    for (vector<string>::iterator i = targets.begin(); i != targets.end(); i++) {
+        string name = *i;
+        Function *f = module->getFunction(name);
+        if (!f) {
+            errs() << "function '" << name << "' is not found\n";
+            return false;
+        }
+        targetFunctions.push_back(f);
+        all.push_back(f);
+    }
+
+    /* build reachability map */
+    for (vector<Function *>::iterator i = all.begin(); i != all.end(); i++) {
+        updateReachabilityMap(*i);
+    }
+
+    /* debug */
+    dumpReachableFunctions();
+
+    return true;
 }
 
 void ReachabilityAnalysis::updateReachabilityMap(Function *f) {

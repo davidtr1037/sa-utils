@@ -10,8 +10,8 @@
 #include <llvm/IR/Function.h>
 #include <llvm/IR/Instruction.h>
 #include <llvm/IR/Instructions.h>
-#include <llvm/IR/Constants.h>
-#include <llvm/Support/raw_ostream.h>
+
+#include "AAPass.h"
 
 class ReachabilityAnalysis {
 public:
@@ -29,12 +29,20 @@ public:
         module(module),
         entry(entry),
         targets(targets),
+        aa(NULL),
         debugs(debugs)
     {
 
     }
 
     ~ReachabilityAnalysis() {};
+
+    /* must be called before making any reachability analysis */
+    void prepare();
+
+    void setAA(AAPass *aa) {
+        this->aa = aa;
+    }
 
     bool run();
 
@@ -67,6 +75,7 @@ private:
     std::vector<llvm::Function *> targetFunctions;
     FunctionTypeMap functionTypeMap;
     ReachabilityMap reachabilityMap;
+    AAPass *aa;
     llvm::raw_ostream &debugs;
 };
 
