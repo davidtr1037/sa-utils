@@ -136,11 +136,6 @@ void ReachabilityAnalysis::computeReachableFunctions(
     stack<Function *> stack;
     FunctionSet pushed;
 
-    /* TODO: do we need this check? */
-    if (!entry) {
-        return;
-    }
-
     stack.push(entry);
     pushed.insert(entry);
     results.insert(entry);
