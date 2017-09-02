@@ -44,13 +44,15 @@ public:
         this->aa = aa;
     }
 
-    bool run();
+    bool run(bool usePA);
 
-    void computeReachableFunctions(llvm::Function *entry, FunctionSet &results);
+    void computeReachableFunctions(
+        llvm::Function *entry,
+        bool usePA,
+        FunctionSet &results
+    );
 
     FunctionSet &getReachableFunctions(llvm::Function *f);
-
-    void getCallTargets(llvm::CallInst *call_inst, FunctionSet &targets);
 
     void dumpReachableFunctions();
 
@@ -62,9 +64,15 @@ private:
 
     void computeFunctionTypeMap();
 
-    void updateReachabilityMap(llvm::Function *f);
+    void updateReachabilityMap(llvm::Function *f, bool usePA);
 
     bool isVirtual(llvm::Function *f);
+
+    void getCallTargets(
+        llvm::CallInst *call_inst,
+        bool usePA,
+        FunctionSet &targets
+    );
 
     llvm::Function *extractFunction(llvm::ConstantExpr *ce);
 

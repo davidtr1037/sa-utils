@@ -88,7 +88,7 @@ void ReachabilityAnalysis::computeFunctionTypeMap() {
     }
 }
 
-bool ReachabilityAnalysis::run() {
+bool ReachabilityAnalysis::run(bool usePA) {
     vector<Function *> all;
 
     /* check parameters... */
@@ -112,7 +112,7 @@ bool ReachabilityAnalysis::run() {
 
     /* build reachability map */
     for (vector<Function *>::iterator i = all.begin(); i != all.end(); i++) {
-        updateReachabilityMap(*i);
+        updateReachabilityMap(*i, usePA);
     }
 
     /* debug */
@@ -121,13 +121,14 @@ bool ReachabilityAnalysis::run() {
     return true;
 }
 
-void ReachabilityAnalysis::updateReachabilityMap(Function *f) {
+void ReachabilityAnalysis::updateReachabilityMap(Function *f, bool usePA) {
     FunctionSet &functions = reachabilityMap[f];
-    computeReachableFunctions(f, functions);
+    computeReachableFunctions(f, usePA, functions);
 }
 
 void ReachabilityAnalysis::computeReachableFunctions(
     Function *entry,
+    bool usePA,
     FunctionSet &results
 ) {
     stack<Function *> stack;
@@ -156,7 +157,7 @@ void ReachabilityAnalysis::computeReachableFunctions(
 
             /* potential call targets */
             FunctionSet targets;
-            getCallTargets(call_inst, targets);
+            getCallTargets(call_inst, usePA, targets);
 
             for (FunctionSet::iterator i = targets.begin(); i != targets.end(); i++) {
                 Function *target = *i;
@@ -196,7 +197,11 @@ bool ReachabilityAnalysis::isVirtual(Function *f) {
     return false;
 }
 
-void ReachabilityAnalysis::getCallTargets(CallInst *call_inst, FunctionSet &targets) {
+void ReachabilityAnalysis::getCallTargets(
+    CallInst *call_inst,
+    bool usePA,
+    FunctionSet &targets
+) {
     Function *called_function = call_inst->getCalledFunction();
     Value *calledValue = call_inst->getCalledValue();
 

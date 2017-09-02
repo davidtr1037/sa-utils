@@ -28,7 +28,7 @@ void Inliner::run() {
         assert(entry);
 
         set<Function *> reachable;
-        ra->computeReachableFunctions(entry, reachable);
+        ra->computeReachableFunctions(entry, false, reachable);
         for (set<Function *>::iterator i = reachable.begin(); i != reachable.end(); i++) {
             Function *f = *i;
             if (f->isDeclaration()) {

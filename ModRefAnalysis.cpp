@@ -196,7 +196,7 @@ bool ModRefAnalysis::canIgnoreStackObject(
     if (i == cache.end()) {
         /* check if the entry reachable from the allocating function */
         set<Function *> reachable;
-        ra->computeReachableFunctions(allocatingFunction, reachable);
+        ra->computeReachableFunctions(allocatingFunction, false, reachable);
 
         /* save result */
         result = reachable.find(f) != reachable.end();
