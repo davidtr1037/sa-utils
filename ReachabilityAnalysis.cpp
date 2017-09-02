@@ -270,8 +270,8 @@ void ReachabilityAnalysis::resolveIndirectCallByPA(Value *calledValue, FunctionS
     }
 
     for (PointsTo::iterator i = pts.begin(); i != pts.end(); ++i) {
-        NodeID node_id = *i;
-        PAGNode *pagNode = aa->getPTA()->getPAG()->getPAGNode(node_id);
+        NodeID nodeId = *i;
+        PAGNode *pagNode = aa->getPTA()->getPAG()->getPAGNode(nodeId);
         if (isa<ObjPN>(pagNode)) {
             ObjPN *obj = dyn_cast<ObjPN>(pagNode);
             const Value *value = obj->getMemObj()->getRefVal();
