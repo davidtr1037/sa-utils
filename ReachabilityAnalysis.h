@@ -74,6 +74,10 @@ private:
         FunctionSet &targets
     );
 
+    void resolveIndirectCallByType(llvm::Type *calledType, FunctionSet &targets);
+
+    void resolveIndirectCallByPA(llvm::Value *calledValue, FunctionSet &targets);
+
     llvm::Function *extractFunction(llvm::ConstantExpr *ce);
 
     llvm::Module *module;
