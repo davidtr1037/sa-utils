@@ -27,6 +27,7 @@ void Inliner::run() {
         Function *entry = module->getFunction(*i);
         assert(entry);
 
+        /* we can't use pointer analysis at this point... */
         set<Function *> reachable;
         ra->computeReachableFunctions(entry, false, reachable);
         for (set<Function *>::iterator i = reachable.begin(); i != reachable.end(); i++) {
