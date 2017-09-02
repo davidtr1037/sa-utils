@@ -71,13 +71,25 @@ int main(int argc, char *argv[]) {
     Cloner *cloner = new Cloner(module, ra, debugs);
     SliceGenerator *sg = new SliceGenerator(module, ra, aa, mra, cloner, debugs);
 
+    /* prepare reachability analysis */
     ra->prepare();
+
+    /* run inlining */
     inliner->run();
-    ra->run(false);
+
+    /* run pointer analysis */
     legacy::PassManager pm;
     pm.add(aa);
     pm.run(*module);
+
+    /* run reachability analysis using pointer analysis */
+    ra->setAA(aa);
+    ra->run(true);
+
+    /* run mod-ref analysis */
     mra->run();
+
+    /* run slicing */
     sg->generate();
 
     return 0;
