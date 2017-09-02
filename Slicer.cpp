@@ -403,7 +403,6 @@ bool Slicer::mark()
     debug::TimeMeasure tm;
     std::set<LLVMNode *> callsites;
 
-    //std::vector<std::string> criterions; // = splitList(slicing_criterion);
     assert(!criterions.empty() && "Do not have the slicing criterion");
 
     for (std::string c : criterions) {
@@ -418,7 +417,7 @@ bool Slicer::mark()
     bool ret = dg.getCallSites(criterions, &callsites);
     got_slicing_criterion = true;
     if (!ret) {
-        errs() << "Did not find slicing criterion\n";
+        errs() << "Did not find slicing criterion:\n";
         for (std::string c : criterions) {
           errs() << "\tmissing criterion: " << c << "\n";
         }
