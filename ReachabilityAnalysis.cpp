@@ -177,19 +177,21 @@ void ReachabilityAnalysis::computeReachableFunctions(
 }
 
 bool ReachabilityAnalysis::isVirtual(Function *f) {
-    for (Value::use_iterator x = f->use_begin(); x != f->use_end(); x++) {
-        Value *use = *x;
+    for (Value::use_iterator i = f->use_begin(); i != f->use_end(); i++) {
+        Value *use = *i;
         CallInst *call_inst = dyn_cast<CallInst>(use);
         if (!call_inst) {
             /* we found a use which is not a call instruction */
             return true;
         }
 
-        for (unsigned int i = 0; i < call_inst->getNumArgOperands(); i++) {
-            Function *arg = dyn_cast<Function>(call_inst->getArgOperand(i));
-            if (arg && arg == f) {
-                /* the function is passed as an argument */
-                return true;
+        for (unsigned int j = 0; j < call_inst->getNumArgOperands(); j++) {
+            Value *arg = call_inst->getArgOperand(j);
+            if (isa<Function>(arg)) {
+                if (arg == f) {
+                    /* the function is passed as an argument */
+                    return true;
+                }
             }
         }
     }
