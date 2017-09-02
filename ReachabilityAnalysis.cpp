@@ -43,18 +43,13 @@ bool ReachabilityAnalysis::run() {
         all.push_back(f);
     }
 
-    /* collect function type map for indirect calls */
+    /* compute function type map for resolving indirect calls */
     computeFunctionTypeMap();
 
     /* build reachability map */
     for (vector<Function *>::iterator i = all.begin(); i != all.end(); i++) {
         updateReachabilityMap(*i);
     }
-
-    /* TODO: can cause problems in some cases... */
-    //if (!removeUnreachableFunctions()) {
-    //    return false;
-    //}
 
     /* debug */
     dumpReachableFunctions();
@@ -136,6 +131,7 @@ void ReachabilityAnalysis::computeReachableFunctions(
     stack<Function *> stack;
     FunctionSet pushed;
 
+    /* TODO: do we need this check? */
     if (!entry) {
         return;
     }
@@ -267,33 +263,6 @@ ReachabilityAnalysis::FunctionSet &ReachabilityAnalysis::getReachableFunctions(F
     }
 
     return i->second;
-}
-
-/* TODO: handle klee_* functions */
-bool ReachabilityAnalysis::removeUnreachableFunctions() {
-    /* get all reachable functions */
-    FunctionSet &reachable = getReachableFunctions(entryFunction);
-
-    /* find unreachable functions */
-    FunctionSet unreachable;
-    for (Module::iterator i = module->begin(); i != module->end(); i++) {
-        Function *f = &*i;
-        if (reachable.find(f) == reachable.end()) {
-            if (reachabilityMap.find(f) != reachabilityMap.end()) {
-                /* TODO: warn about it... */
-                return false;
-            }
-            unreachable.insert(f);
-        }
-    }
-
-    for (FunctionSet::iterator i = unreachable.begin(); i != unreachable.end(); i++) {
-        Function *f = *i;
-        f->replaceAllUsesWith(UndefValue::get(f->getType()));
-        f->eraseFromParent();
-    }
-
-    return true;
 }
 
 void ReachabilityAnalysis::dumpReachableFunctions() {

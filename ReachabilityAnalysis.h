@@ -60,8 +60,6 @@ private:
 
     llvm::Function *extractFunction(llvm::ConstantExpr *ce);
 
-    bool removeUnreachableFunctions();
-
     llvm::Module *module;
     std::string entry;
     std::vector<std::string> targets;
