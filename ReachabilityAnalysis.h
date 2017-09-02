@@ -40,7 +40,7 @@ public:
     /* must be called before making any reachability analysis */
     void prepare();
 
-    void setAA(AAPass *aa) {
+    void usePA(AAPass *aa) {
         this->aa = aa;
     }
 

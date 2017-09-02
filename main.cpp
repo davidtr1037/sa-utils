@@ -83,7 +83,7 @@ int main(int argc, char *argv[]) {
     pm.run(*module);
 
     /* run reachability analysis using pointer analysis */
-    ra->setAA(aa);
+    ra->usePA(aa);
     ra->run(true);
 
     /* run mod-ref analysis */
