@@ -170,8 +170,10 @@ void ReachabilityAnalysis::computeReachableFunctions(
                 }
             }
 
-            updateCallMap(callInst, targets);
-            updateRetMap(callInst, targets);
+            if (usePA) {
+                updateCallMap(callInst, targets);
+                updateRetMap(callInst, targets);
+            }
         }
     }
 }
