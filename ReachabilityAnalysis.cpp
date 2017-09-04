@@ -321,6 +321,15 @@ void ReachabilityAnalysis::updateRetMap(Instruction *callInst, FunctionSet &targ
     }
 }
 
+ReachabilityAnalysis::FunctionSet &ReachabilityAnalysis::getReachableFunctions(Function *f) {
+    ReachabilityMap::iterator i = reachabilityMap.find(f);
+    if (i == reachabilityMap.end()) {
+        assert(false);
+    }
+
+    return i->second;
+}
+
 void ReachabilityAnalysis::getReachableInstructions(
     vector<CallInst *> &callSites,
     InstructionSet &result
@@ -384,13 +393,17 @@ void ReachabilityAnalysis::getReachableInstructions(
     }
 }
 
-ReachabilityAnalysis::FunctionSet &ReachabilityAnalysis::getReachableFunctions(Function *f) {
-    ReachabilityMap::iterator i = reachabilityMap.find(f);
-    if (i == reachabilityMap.end()) {
-        assert(false);
+void ReachabilityAnalysis::getCallTargets(llvm::Instruction *inst, FunctionSet &result) {
+    if (inst->getOpcode() != Instruction::Call) {
+        return;
     }
 
-    return i->second;
+    CallMap::iterator i = callMap.find(inst);
+    if (i == callMap.end()) {
+        return;
+    }
+
+    result = i->second;
 }
 
 void ReachabilityAnalysis::dumpReachableFunctions() {

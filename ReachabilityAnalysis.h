@@ -62,6 +62,8 @@ public:
         InstructionSet &result
     );
 
+    void getCallTargets(llvm::Instruction *inst, FunctionSet &result);
+
     void dumpReachableFunctions();
 
 private:
