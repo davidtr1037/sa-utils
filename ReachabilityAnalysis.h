@@ -17,8 +17,11 @@ class ReachabilityAnalysis {
 public:
 
     typedef std::set<llvm::Function *> FunctionSet;
+    typedef std::set<llvm::Instruction *> InstructionSet;
     typedef std::map<llvm::Function *, FunctionSet> ReachabilityMap;
     typedef std::map<llvm::FunctionType *, FunctionSet> FunctionTypeMap;
+    typedef std::map<llvm::Instruction *, FunctionSet> CallMap;
+    typedef std::map<llvm::Function *, InstructionSet> RetMap;
 
     ReachabilityAnalysis(
         llvm::Module *module,
@@ -54,6 +57,11 @@ public:
 
     FunctionSet &getReachableFunctions(llvm::Function *f);
 
+    void getReachableInstructions(
+        std::vector<llvm::CallInst *> &callSites,
+        InstructionSet &result
+    );
+
     void dumpReachableFunctions();
 
 private:
@@ -78,6 +86,10 @@ private:
 
     void resolveIndirectCallByPA(llvm::Value *calledValue, FunctionSet &targets);
 
+    void updateCallMap(llvm::Instruction *callInst, FunctionSet &targets);
+
+    void updateRetMap(llvm::Instruction *callInst, FunctionSet &targets);
+
     llvm::Function *extractFunction(llvm::ConstantExpr *ce);
 
     llvm::Module *module;
@@ -85,9 +97,11 @@ private:
     std::vector<std::string> targets;
     llvm::Function *entryFunction;
     std::vector<llvm::Function *> targetFunctions;
+    AAPass *aa;
     FunctionTypeMap functionTypeMap;
     ReachabilityMap reachabilityMap;
-    AAPass *aa;
+    CallMap callMap;
+    RetMap retMap;
     llvm::raw_ostream &debugs;
 };
 

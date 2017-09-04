@@ -169,6 +169,9 @@ void ReachabilityAnalysis::computeReachableFunctions(
                     pushed.insert(target);
                 }
             }
+
+            updateCallMap(callInst, targets);
+            updateRetMap(callInst, targets);
         }
     }
 }
@@ -304,6 +307,81 @@ Function *ReachabilityAnalysis::extractFunction(ConstantExpr *ce) {
     }
 
     return NULL;
+}
+
+void ReachabilityAnalysis::updateCallMap(Instruction *callInst, FunctionSet &targets) {
+    callMap[callInst].insert(targets.begin(), targets.end());
+}
+
+void ReachabilityAnalysis::updateRetMap(Instruction *callInst, FunctionSet &targets) {
+    Instruction *retInst = callInst->getNextNode();
+    for (FunctionSet::iterator i = targets.begin(); i != targets.end(); i++) {
+        Function *f = *i;
+        retMap[f].insert(retInst);
+    }
+}
+
+void ReachabilityAnalysis::getReachableInstructions(
+    vector<CallInst *> &callSites,
+    InstructionSet &result
+) {
+    stack<Instruction *> stack;
+    InstructionSet visited;
+
+    for (vector<CallInst *>::iterator i = callSites.begin(); i != callSites.end(); i++) {
+        CallInst *callInst = *i;
+        stack.push(callInst);
+    }
+
+    while (!stack.empty()) {
+        Instruction *inst = stack.top();
+        stack.pop();
+
+        if (isa<CallInst>(inst)) {
+            CallMap::iterator i = callMap.find(inst);
+            if (i == callMap.end()) {
+                break;
+            }
+
+            FunctionSet &targets = i->second;
+            for (FunctionSet::iterator j = targets.begin(); j != targets.end(); j++) {
+                Function *f = *j;
+                if (f->isDeclaration()) {
+                    continue;
+                }
+
+                Instruction *first = f->begin()->begin();
+                stack.push(first);
+            }
+
+            stack.push(inst->getNextNode());
+
+        } else if (isa<ReturnInst>(inst)) {
+            Function *src = inst->getParent()->getParent();
+            RetMap::iterator i = retMap.find(src);
+            if (i == retMap.end()) {
+                break;
+            }
+
+            InstructionSet &targets = i->second;
+            for (InstructionSet::iterator j = targets.begin(); j != targets.end(); j++) {
+                Instruction *retInst = *j;
+                stack.push(retInst);
+            }
+
+        } else if (isa<TerminatorInst>(inst)) {
+            TerminatorInst *termInst = dyn_cast<TerminatorInst>(inst);
+            for (unsigned int i = 0; i < termInst->getNumSuccessors(); i++) {
+                BasicBlock *bb = termInst->getSuccessor(i);
+                stack.push(bb->begin());
+            }
+        } else {
+            stack.push(inst->getNextNode());
+        }
+
+        visited.insert(inst);
+        result.insert(inst);
+    }
 }
 
 ReachabilityAnalysis::FunctionSet &ReachabilityAnalysis::getReachableFunctions(Function *f) {
