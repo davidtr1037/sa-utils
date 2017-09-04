@@ -343,8 +343,14 @@ void ReachabilityAnalysis::getReachableInstructions(
     }
 
     while (!stack.empty()) {
+        /* fetch an instruction */
         Instruction *inst = stack.top();
         stack.pop();
+
+        /* check if already visited */
+        if (visited.find(inst) != visited.end()) {
+            continue;
+        }
 
         if (isa<CallInst>(inst)) {
             CallMap::iterator i = callMap.find(inst);
