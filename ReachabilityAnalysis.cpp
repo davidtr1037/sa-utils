@@ -341,7 +341,7 @@ void ReachabilityAnalysis::getReachableInstructions(
 
     for (vector<CallInst *>::iterator i = callSites.begin(); i != callSites.end(); i++) {
         CallInst *callInst = *i;
-        stack.push(callInst);
+        stack.push(callInst->getNextNode());
     }
 
     while (!stack.empty()) {
