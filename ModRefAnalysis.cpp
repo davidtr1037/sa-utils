@@ -217,8 +217,14 @@ void ModRefAnalysis::collectRefInfo(Function *entry) {
     for (Value::use_iterator i = entry->use_begin(); i != entry->use_end(); i++) {
         User *user = *i;
         if (isa<CallInst>(user)) {
-            /* TODO: check called value... */
-            callSites.push_back(dyn_cast<CallInst>(user));
+            CallInst *callInst = dyn_cast<CallInst>(user);
+
+            /* check if the call site is relevant */
+            set<Function *> targets;
+            ra->getCallTargets(callInst, targets);
+            if (targets.find(entry) != targets.end()) {
+                callSites.push_back(dyn_cast<CallInst>(user));
+            }
         }
     }
 
