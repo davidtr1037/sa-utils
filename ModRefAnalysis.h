@@ -123,15 +123,9 @@ private:
 
     void collectModInfo(llvm::Function *f);
 
-    void addStore(
-        llvm::Function *f,
-        llvm::Instruction *store
-    );
+    void addStore(llvm::Function *f, llvm::Instruction *store);
 
-    bool canIgnoreStackObject(
-        llvm::Function *f,
-        const llvm::Value *value
-    );
+    bool canIgnoreStackObject(llvm::Function *f, const llvm::Value *value);
 
     void collectRefInfo(llvm::Function *entry);
 

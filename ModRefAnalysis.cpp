@@ -78,7 +78,7 @@ void ModRefAnalysis::run() {
     /* compute the side effects of each target function */
     computeModRefInfo();
 
-    /* ... */
+    /* for each modified object compute the modifying store instructions */
     computeModInfoToStoreMap();
 
     /* debug */
