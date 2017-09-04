@@ -154,7 +154,7 @@ void ReachabilityAnalysis::computeReachableFunctions(
 
             /* potential call targets */
             FunctionSet targets;
-            getCallTargets(callInst, usePA, targets);
+            resolveCallTargets(callInst, usePA, targets);
 
             for (FunctionSet::iterator i = targets.begin(); i != targets.end(); i++) {
                 Function *target = *i;
@@ -199,7 +199,7 @@ bool ReachabilityAnalysis::isVirtual(Function *f) {
     return false;
 }
 
-void ReachabilityAnalysis::getCallTargets(
+void ReachabilityAnalysis::resolveCallTargets(
     CallInst *callInst,
     bool usePA,
     FunctionSet &targets

@@ -76,7 +76,7 @@ private:
 
     bool isVirtual(llvm::Function *f);
 
-    void getCallTargets(
+    void resolveCallTargets(
         llvm::CallInst *callInst,
         bool usePA,
         FunctionSet &targets
