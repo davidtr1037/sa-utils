@@ -69,8 +69,11 @@ void ModRefAnalysis::run() {
         collectModInfo(f);
     }
 
-    /* collect ref information for the whole program (can be optimized) */
-    collectRefInfo(entryFunction);
+    /* collect ref information with respect to the relevant call sites */
+    for (vector<Function *>::iterator i = targetFunctions.begin(); i != targetFunctions.end(); i++) {
+        Function *f = *i;
+        collectRefInfo(f);
+    }
 
     /* compute the side effects of each target function */
     computeModRefInfo();
@@ -210,35 +213,46 @@ bool ModRefAnalysis::canIgnoreStackObject(
 }
 
 void ModRefAnalysis::collectRefInfo(Function *entry) {
-    set<Function *> &reachable = ra->getReachableFunctions(entry);
+    vector<CallInst *> callSites;
+    for (Value::use_iterator i = entry->use_begin(); i != entry->use_end(); i++) {
+        User *user = *i;
+        if (isa<CallInst>(user)) {
+            /* TODO: check called value... */
+            callSites.push_back(dyn_cast<CallInst>(user));
+        }
+    }
 
-    for (set<Function *>::iterator i = reachable.begin(); i != reachable.end(); i++) {
-        Function *f = *i;
-        if (f->isDeclaration()) {
-            continue;
+    /* get reachable instructions */
+    set<Instruction *> reachable;
+    ra->getReachableInstructions(callSites, reachable);
+
+    for (set<Instruction *>::iterator i = reachable.begin(); i != reachable.end(); i++) {
+        Instruction *inst = *i;
+
+        /* handle load */
+        if (inst->getOpcode() == Instruction::Load) {
+            addLoad(entry, inst);
         }
 
-        for (inst_iterator j = inst_begin(f); j != inst_end(f); j++) {
-            Instruction *inst = &*j;
-            if (inst->getOpcode() == Instruction::Load) {
-                addLoad(inst);
-            }
-            if (inst->getOpcode() == Instruction::Store) {
-                addOverridingStore(inst);
-            }
+        /* handle store */
+        if (inst->getOpcode() == Instruction::Store) {
+            addOverridingStore(inst);
         }
     }
 }
 
-void ModRefAnalysis::addLoad(Instruction *load) {
+void ModRefAnalysis::addLoad(Function *f, Instruction *load) {
     AliasAnalysis::Location loadLocation = getLoadLocation(dyn_cast<LoadInst>(load));
     NodeID id = aa->getPTA()->getPAG()->getValueNode(loadLocation.Ptr);
     PointsTo &pts = aa->getPTA()->getPts(id);
 
+    PointsTo &refPts = refPtsMap[f];
     refPts |= pts;
+
     for (PointsTo::iterator i = pts.begin(); i != pts.end(); ++i) {
         NodeID nodeId = *i;
-        objToLoadMap[nodeId].insert(load);
+        pair<Function *, NodeID> k = make_pair(f, nodeId);
+        objToLoadMap[k].insert(load);
     }
 }
 
@@ -258,18 +272,21 @@ void ModRefAnalysis::computeModRefInfo() {
         Function *f = i->first;
         PointsTo &modPts = i->second;
 
+        PointsTo &refPts = refPtsMap[f];
         PointsTo pts = modPts & refPts;
         InstructionSet &modSet = modSetMap[f];
 
         for (PointsTo::iterator ni = pts.begin(); ni != pts.end(); ++ni) {
             NodeID nodeId = *ni;
 
-            /* update modifies-set */
+            /* set key */
             pair<Function *, NodeID> k = make_pair(f, nodeId);
+
+            /* update modifies-set */
             InstructionSet &stores = objToStoreMap[k];
             modSet.insert(stores.begin(), stores.end());
 
-            InstructionSet &loads = objToLoadMap[nodeId];
+            InstructionSet &loads = objToLoadMap[k];
             AllocSite allocSite = getAllocSite(nodeId);
 
             for (InstructionSet::iterator i = loads.begin(); i != loads.end(); i++) {
@@ -483,6 +500,7 @@ void ModRefAnalysis::dumpOverridingStores() {
         Instruction *inst = *j;
         dumpInst(inst);
     }
+    debugs << "\n";
 }
 
 void ModRefAnalysis::dumpInst(Instruction *inst, const char *prefix) {

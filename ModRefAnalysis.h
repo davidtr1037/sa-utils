@@ -23,8 +23,10 @@ public:
     typedef std::map<llvm::Function *, PointsTo> ModPtsMap;
     typedef std::map<llvm::Function *, InstructionSet> ModSetMap;
 
+    typedef std::map<llvm::Function *, PointsTo> RefPtsMap;
+
     typedef std::map<std::pair<llvm::Function *, NodeID>, InstructionSet> ObjToStoreMap;
-    typedef std::map<NodeID, InstructionSet> ObjToLoadMap;
+    typedef std::map<std::pair<llvm::Function *, NodeID>, InstructionSet> ObjToLoadMap;
     typedef std::map<NodeID, InstructionSet> ObjToOverridingStoreMap;
     typedef std::map<llvm::Instruction *, InstructionSet> LoadToStoreMap;
 
@@ -133,7 +135,7 @@ private:
 
     void collectRefInfo(llvm::Function *entry);
 
-    void addLoad(llvm::Instruction *load);
+    void addLoad(llvm::Function *f, llvm::Instruction *load);
 
     void addOverridingStore(llvm::Instruction *store);
 
@@ -162,7 +164,7 @@ private:
 
     ModPtsMap modPtsMap;
     ObjToStoreMap objToStoreMap;
-    PointsTo refPts;
+    RefPtsMap refPtsMap;
     ObjToLoadMap objToLoadMap;
     ObjToOverridingStoreMap objToOverridingStoreMap;
 
