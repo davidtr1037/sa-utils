@@ -278,8 +278,11 @@ void ModRefAnalysis::computeModRefInfo() {
         Function *f = i->first;
         PointsTo &modPts = i->second;
 
+        /* get the corresponding ref-set */
         PointsTo &refPts = refPtsMap[f];
+        /* compute the intersection */
         PointsTo pts = modPts & refPts;
+        /* get the corresponding modifies-set */
         InstructionSet &modSet = modSetMap[f];
 
         for (PointsTo::iterator ni = pts.begin(); ni != pts.end(); ++ni) {
