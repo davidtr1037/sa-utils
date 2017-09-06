@@ -295,9 +295,10 @@ void ModRefAnalysis::computeModRefInfo() {
             InstructionSet &stores = objToStoreMap[k];
             modSet.insert(stores.begin(), stores.end());
 
-            InstructionSet &loads = objToLoadMap[k];
+            /* get allocation site */
             AllocSite allocSite = getAllocSite(nodeId);
 
+            InstructionSet &loads = objToLoadMap[k];
             for (InstructionSet::iterator i = loads.begin(); i != loads.end(); i++) {
                 Instruction *load = *i;
 
@@ -309,7 +310,7 @@ void ModRefAnalysis::computeModRefInfo() {
                 loadToModInfoMap[load].insert(modInfo);
             }
 
-            /* ... */
+            /* update overriding stores */
             InstructionSet &localOverridingStores = objToOverridingStoreMap[nodeId];
             overridingStores.insert(localOverridingStores.begin(), localOverridingStores.end());
         }
